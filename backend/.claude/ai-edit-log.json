@@ -1,0 +1,4434 @@
+[
+  {
+    "timestamp": "2026-08-17T03:52:43.985Z",
+    "tool": "Edit",
+    "file": "package.json",
+    "linesAdded": 3,
+    "linesRemoved": 1,
+    "net": 2,
+    "addedLines": [
+      {
+        "text": "\"eslint\": \"^8.57.1\",",
+        "firstSeen": "2026-08-17T03:52:43.985Z"
+      },
+      {
+        "text": "\"jest\": \"^29.7.0\",",
+        "firstSeen": "2026-08-17T03:52:43.985Z"
+      },
+      {
+        "text": "\"mongodb-memory-server\": \"^10.1.2\",",
+        "firstSeen": "2026-08-17T03:52:43.985Z"
+      }
+    ],
+    "removedLines": [
+      {
+        "text": "\"jest\": \"^29.7.0\",",
+        "firstSeen": "2026-08-17T03:52:43.985Z"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-08-17T03:52:52.644Z",
+    "tool": "Edit",
+    "file": "package.json",
+    "linesAdded": 2,
+    "linesRemoved": 1,
+    "net": 1,
+    "addedLines": [
+      {
+        "text": "\"test\": \"jest\",",
+        "firstSeen": "2026-08-17T03:52:52.644Z"
+      },
+      {
+        "text": "\"lint\": \"eslint src\"",
+        "firstSeen": "2026-08-17T03:52:52.644Z"
+      }
+    ],
+    "removedLines": [
+      {
+        "text": "\"test\": \"jest\"",
+        "firstSeen": "2026-08-17T03:52:52.644Z"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-08-17T03:53:01.648Z",
+    "tool": "Write",
+    "file": ".eslintrc.json",
+    "linesAdded": 19,
+    "linesRemoved": 0,
+    "net": 19,
+    "addedLines": [
+      {
+        "text": "{",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"root\": true,",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"env\": {",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"node\": true,",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"es2022\": true,",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"jest\": true",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"parserOptions\": {",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"ecmaVersion\": 2022,",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"sourceType\": \"script\"",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"extends\": \"eslint:recommended\",",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"rules\": {",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"no-unused-vars\": [\"warn\", { \"argsIgnorePattern\": \"^_|^next$|^req$|^res$\" }],",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"no-console\": \"off\",",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "\"no-process-exit\": \"off\"",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:01.648Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:53:25.339Z",
+    "tool": "Write",
+    "file": "src/config/db.js",
+    "linesAdded": 34,
+    "linesRemoved": 0,
+    "net": 34,
+    "addedLines": [
+      {
+        "text": "// db.js — MongoDB Atlas connection setup via Mongoose.",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 2 / 9): establishes the Mongoose connection using MONGODB_URI",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "// from the environment. Mongoose is the ODM used for schema validation and transactions.",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "const mongoose = require('mongoose');",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "// Fail fast on bad queries and keep buffering behaviour predictable in tests.",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "mongoose.set('strictQuery', true);",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "/**",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "* Connect to MongoDB using the MONGODB_URI env var.",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "* Returns the active mongoose connection so callers can await readiness.",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "*/",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "async function connectDB() {",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "const uri = process.env.MONGODB_URI;",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "if (!uri) {",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "throw new Error('MONGODB_URI is not set — see .env.example (Spec Section 9).');",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "await mongoose.connect(uri);",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "console.log(`[db] MongoDB connected: ${mongoose.connection.host}`);",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "// Surface connection-level errors that happen after the initial connect.",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "mongoose.connection.on('error', (err) => {",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "console.error('[db] MongoDB connection error:', err.message);",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "return mongoose.connection;",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "module.exports = connectDB;",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:25.339Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:53:28.627Z",
+    "tool": "Write",
+    "file": "src/config/redis.js",
+    "linesAdded": 19,
+    "linesRemoved": 0,
+    "net": 19,
+    "addedLines": [
+      {
+        "text": "// redis.js — Shared Redis connection (ioredis) used as the broker/storage layer for BullMQ.",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 7.6): creates one shared ioredis connection from REDIS_URL so both",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "// job producers (jobs/) and consumers (workers/) reuse the same connection. Redis is used ONLY",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "// as the BullMQ broker, not as the primary database.",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "const Redis = require('ioredis');",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "// BullMQ requires maxRetriesPerRequest: null on the connection it uses for blocking commands.",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "const connection = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379', {",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "maxRetriesPerRequest: null,",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "connection.on('connect', () => console.log('[redis] connected'));",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "connection.on('error', (err) => console.error('[redis] connection error:', err.message));",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "// Export the single shared connection so jobs/ and workers/ don't each open their own.",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "module.exports = connection;",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:28.627Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:53:48.091Z",
+    "tool": "Write",
+    "file": "src/models/User.js",
+    "linesAdded": 27,
+    "linesRemoved": 0,
+    "net": 27,
+    "addedLines": [
+      {
+        "text": "// User.js — Mongoose model for application users (admin/staff) who log in and manage BillFlow.",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "// Schema fields (see Spec Section 5.1):",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "//   _id          ObjectId",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "//   name         String",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "//   email        String   (unique, required)",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "//   passwordHash String",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "//   role         String   (enum: 'admin', 'staff')",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "//   createdAt    Date",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "//   updatedAt    Date",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "const mongoose = require('mongoose');",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "const userSchema = new mongoose.Schema(",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "{",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "name: { type: String },",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "email: { type: String, required: true, unique: true, lowercase: true, trim: true },",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "// Never store raw passwords — only the bcrypt hash (Spec Section 7.3 / 8).",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "passwordHash: { type: String },",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "role: { type: String, enum: ['admin', 'staff'], default: 'staff' },",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "// timestamps: true auto-manages createdAt / updatedAt.",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "{ timestamps: true }",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": ");",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "module.exports = mongoose.model('User', userSchema);",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:48.091Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:53:52.802Z",
+    "tool": "Write",
+    "file": "src/models/Customer.js",
+    "linesAdded": 41,
+    "linesRemoved": 0,
+    "net": 41,
+    "addedLines": [
+      {
+        "text": "// Customer.js — Mongoose model for customers that businesses bill and track balances for.",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "// Schema fields (see Spec Section 5.2):",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   _id            ObjectId",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   name           String   (required)",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   email          String   (required)",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   phone          String",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   billingAddress Object { line1, city, state, zip, country }",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   balance        Number   (default: 0)  // running outstanding balance",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   createdBy      ObjectId (ref: User)",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   createdAt      Date",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "//   updatedAt      Date",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "const mongoose = require('mongoose');",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "// Sub-document for the billing address — no separate _id needed.",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "const billingAddressSchema = new mongoose.Schema(",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "{",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "line1: { type: String },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "city: { type: String },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "state: { type: String },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "zip: { type: String },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "country: { type: String },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "{ _id: false }",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": ");",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "const customerSchema = new mongoose.Schema(",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "{",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "name: { type: String, required: true, trim: true },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "email: { type: String, required: true, lowercase: true, trim: true },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "phone: { type: String },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "billingAddress: { type: billingAddressSchema, default: () => ({}) },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "balance: { type: Number, default: 0 }, // running outstanding balance",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "{ timestamps: true }",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": ");",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "module.exports = mongoose.model('Customer', customerSchema);",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:53:52.802Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:54:06.655Z",
+    "tool": "Write",
+    "file": "src/models/Invoice.js",
+    "linesAdded": 49,
+    "linesRemoved": 0,
+    "net": 49,
+    "addedLines": [
+      {
+        "text": "// Invoice.js — Mongoose model for invoices (manual + recurring) issued to customers.",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "// Schema fields (see Spec Section 5.3).",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "const mongoose = require('mongoose');",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "// Line item sub-document — an invoice can have multiple products/services.",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "const invoiceItemSchema = new mongoose.Schema(",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "{",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "description: { type: String },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "quantity: { type: Number },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "unitPrice: { type: Number },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "total: { type: Number }, // = quantity * unitPrice, calculated at creation time",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "{ _id: false }",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": ");",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "const invoiceSchema = new mongoose.Schema(",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "{",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "// Human-readable ID shown to customers (e.g. \"INV-2026-0042\"). Auto-generated at creation.",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "invoiceNumber: { type: String, unique: true },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "items: { type: [invoiceItemSchema], default: [] },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "subtotal: { type: Number }, // sum of all item totals, before tax",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "tax: { type: Number },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "totalAmount: { type: Number }, // subtotal + tax — final amount owed",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "status: {",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "type: String,",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "default: 'draft',",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "dueDate: { type: Date },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "isRecurring: { type: Boolean, default: false },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "// Only relevant when isRecurring is true; null otherwise.",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "recurringCycle: {",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "type: String,",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "enum: ['monthly', 'quarterly', 'yearly', null],",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "default: null,",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "pdfUrl: { type: String }, // filled in after PDFKit runs",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "// \"sparse\" so the unique constraint only applies to docs that actually set it.",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "// The real idempotency check happens via the IdempotencyKey collection (Spec Section 7.1).",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "idempotencyKey: { type: String, unique: true, sparse: true },",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "{ timestamps: true }",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": ");",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "module.exports = mongoose.model('Invoice', invoiceSchema);",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:06.655Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:54:10.765Z",
+    "tool": "Write",
+    "file": "src/models/Payment.js",
+    "linesAdded": 24,
+    "linesRemoved": 0,
+    "net": 24,
+    "addedLines": [
+      {
+        "text": "// Payment.js — Mongoose model for payments recorded against invoices.",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "// Schema fields (see Spec Section 5.4).",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "const mongoose = require('mongoose');",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "const paymentSchema = new mongoose.Schema(",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "{",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice', required: true },",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "// Denormalized so we don't always need to look up the invoice just to know who paid.",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "amount: { type: Number, required: true },",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "method: { type: String, enum: ['card', 'bank_transfer', 'cash', 'other'] },",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "transactionRef: { type: String }, // external reference from payment gateway (if any)",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "// \"sparse\" — unique only for docs that set it. See Spec Section 7.1.",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "idempotencyKey: { type: String, unique: true, sparse: true },",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "},",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "// Spec 5.4 lists only createdAt (no updatedAt) for Payment.",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "{ timestamps: { createdAt: true, updatedAt: false } }",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": ");",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "module.exports = mongoose.model('Payment', paymentSchema);",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:10.765Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:54:20.990Z",
+    "tool": "Write",
+    "file": "src/models/AuditLog.js",
+    "linesAdded": 21,
+    "linesRemoved": 0,
+    "net": 21,
+    "addedLines": [
+      {
+        "text": "// AuditLog.js — Mongoose model capturing before/after state of sensitive domain operations for compliance.",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "// Schema fields (see Spec Section 5.5).",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "// Note (Spec 7.3): never log passwords or payment card data in beforeState/afterState.",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "const mongoose = require('mongoose');",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "const auditLogSchema = new mongoose.Schema({",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "action: { type: String, required: true }, // e.g. 'INVOICE_CREATED', 'PAYMENT_UPDATED'",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "entityType: { type: String }, // 'Invoice', 'Customer', 'Payment'",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "entityId: { type: mongoose.Schema.Types.ObjectId },",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "// Mixed — captures an arbitrary snapshot of the entity before/after the change.",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "beforeState: { type: mongoose.Schema.Types.Mixed },",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "afterState: { type: mongoose.Schema.Types.Mixed },",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "timestamp: { type: Date, default: Date.now },",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "module.exports = mongoose.model('AuditLog', auditLogSchema);",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:20.990Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:54:26.077Z",
+    "tool": "Write",
+    "file": "src/models/IdempotencyKey.js",
+    "linesAdded": 28,
+    "linesRemoved": 0,
+    "net": 28,
+    "addedLines": [
+      {
+        "text": "// IdempotencyKey.js — Mongoose model storing idempotency keys + cached responses to prevent duplicate writes.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// This collection stores ONLY idempotency keys and their cached responses — no business data.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// See Spec Section 7.1.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// Import Mongoose — the ODM (Object Document Mapper) we use to talk to MongoDB",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "const mongoose = require('mongoose');",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// Schema definition for the IdempotencyKey collection",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "const idempotencyKeySchema = new mongoose.Schema({",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// The unique key sent by the client in the \"Idempotency-Key\" request header.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// \"unique: true\" means MongoDB itself will reject a duplicate insert of the same key.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "key: { type: String, required: true, unique: true },",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// The HTTP status code returned the first time this request was processed (e.g. 201).",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "statusCode: { type: Number, required: true },",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// The actual response body sent back the first time. \"Mixed\" so it can hold any shape.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "response: { type: mongoose.Schema.Types.Mixed, required: true },",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// \"expires: 86400\" creates a TTL index — MongoDB deletes this doc 24h after createdAt.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// Idempotency keys only protect against short-term retries, not long-term storage.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "createdAt: { type: Date, default: Date.now, expires: 86400 },",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "// Export the compiled model so the middleware can import and use it.",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "module.exports = mongoose.model('IdempotencyKey', idempotencyKeySchema);",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:26.077Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:54:50.560Z",
+    "tool": "Write",
+    "file": "src/middleware/idempotency.middleware.js",
+    "linesAdded": 51,
+    "linesRemoved": 0,
+    "net": 51,
+    "addedLines": [
+      {
+        "text": "// idempotency.middleware.js — Express middleware that short-circuits duplicate POSTs using the Idempotency-Key header.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 7.1): checks the IdempotencyKey collection for the request's",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// \"Idempotency-Key\" header; if found, returns the previously stored response without re-running",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// the controller; if new, lets the request proceed and caches the key + response afterward.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Wired onto POST /api/invoices and POST /api/payments.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Import the IdempotencyKey model.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "const IdempotencyKey = require('../models/IdempotencyKey');",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// This is an Express middleware — it runs BEFORE the actual controller function.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// (req, res, next) is the standard Express middleware signature.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "async function idempotencyMiddleware(req, res, next) {",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Read the \"Idempotency-Key\" header (Express lowercases header names).",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "const key = req.headers['idempotency-key'];",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// No key → skip protection and let the request go through normally.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "if (!key) return next();",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Has this exact key been used before?",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "const existing = await IdempotencyKey.findOne({ key });",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "if (existing) {",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Already processed — return the SAME response we sent the first time,",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// without re-running the controller (no duplicate invoice/payment).",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "return res.status(existing.statusCode).json(existing.response);",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// --- New request we haven't seen before ---",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Keep a reference to the real res.json so we can call it after caching.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "const originalJson = res.json.bind(res);",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Override res.json: when the controller calls res.json(body), first persist the",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// key + response, THEN send the response to the client.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "res.json = async (body) => {",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "await IdempotencyKey.create({",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "key, // the same key from the header",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "statusCode: res.statusCode, // whatever status the controller set (e.g. 201)",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "response: body, // the actual response data the controller is sending",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "return originalJson(body); // now actually send the response",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "};",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Continue to the actual controller (e.g. createInvoice).",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "next();",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "// Export so routes can plug this in before their controller functions.",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "module.exports = idempotencyMiddleware;",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:50.560Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:54:53.352Z",
+    "tool": "Write",
+    "file": "src/middleware/auth.middleware.js",
+    "linesAdded": 15,
+    "linesRemoved": 0,
+    "net": 15,
+    "addedLines": [
+      {
+        "text": "// auth.middleware.js — Express middleware that verifies the JWT access token and attaches the user to the request.",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 8): guards protected routes using the JWT access-token pattern",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "// (15 min access token; refresh handled via httpOnly cookie).",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "// TODO: verify JWT from Authorization header, attach req.user, call next() or return 401",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "// Minimal valid export so routes can require and mount this without crashing.",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "function authMiddleware(req, res, next) {",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "// TODO: verify JWT from Authorization header, attach req.user, call next() or return 401",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "return next();",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "module.exports = authMiddleware;",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:53.352Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:54:56.331Z",
+    "tool": "Write",
+    "file": "src/middleware/errorHandler.js",
+    "linesAdded": 21,
+    "linesRemoved": 0,
+    "net": 21,
+    "addedLines": [
+      {
+        "text": "// errorHandler.js — Centralized Express error-handling middleware producing a consistent error response shape.",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 8): catches errors from all routes and returns the standard shape",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "// { success, message, errorCode }.",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "// TODO: centralized error handler, return { success: false, message, errorCode } shape per Section 8",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "// Express recognizes error-handling middleware by its 4-arg signature (err, req, res, next).",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "function errorHandler(err, req, res, next) {",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "// TODO: centralized error handler, return { success: false, message, errorCode } shape per Section 8",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "const status = err.statusCode || 500;",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "return res.status(status).json({",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "success: false,",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "message: err.message || 'Internal Server Error',",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "errorCode: err.errorCode || 'INTERNAL_ERROR',",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "module.exports = errorHandler;",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:54:56.331Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:55:22.684Z",
+    "tool": "Write",
+    "file": "src/server.js",
+    "linesAdded": 65,
+    "linesRemoved": 0,
+    "net": 65,
+    "addedLines": [
+      {
+        "text": "// server.js — Backend entry point: creates the Express app, wires middleware/routes, and starts the API.",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 3 / 8): bootstraps the Express REST API, connects to MongoDB (config/db),",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// mounts module routers (auth, customer, invoice, payment), request logging (morgan), CORS, and the",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// centralized error handler. Notification is worker-triggered and has no router (see module comment).",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "require('dotenv').config();",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const express = require('express');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const cors = require('cors');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const morgan = require('morgan');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const connectDB = require('./config/db');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const errorHandler = require('./middleware/errorHandler');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// Module routers.",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const authRoutes = require('./modules/auth/auth.routes');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const customerRoutes = require('./modules/customer/customer.routes');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const invoiceRoutes = require('./modules/invoice/invoice.routes');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const paymentRoutes = require('./modules/payment/payment.routes');",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const app = express();",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// --- Global middleware ---",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.use(cors({ origin: process.env.CLIENT_URL || true, credentials: true }));",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.use(express.json());",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.use(morgan('dev'));",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// --- Health check (trivial infra — fully real) ---",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.get('/health', (req, res) => res.json({ status: 'ok' }));",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// --- Module routes (Spec Section 6) ---",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.use('/api/auth', authRoutes);",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.use('/api/customers', customerRoutes);",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.use('/api/invoices', invoiceRoutes);",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.use('/api/payments', paymentRoutes);",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// --- Centralized error handler (must be mounted last, Spec Section 8) ---",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.use(errorHandler);",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "/**",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "* Start the HTTP server, then attempt the DB connection.",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "* We start listening regardless so /health and the API surface come up even if",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "* MongoDB isn't reachable yet (useful during scaffolding / local dev).",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "*/",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "async function start() {",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "const port = process.env.PORT || 5000;",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "app.listen(port, () => console.log(`[server] listening on port ${port}`));",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "try {",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "await connectDB();",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "} catch (err) {",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "console.error('[server] MongoDB connection failed:', err.message);",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// Don't exit — the server stays up; DB-backed endpoints will error until it connects.",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "// Only auto-start when run directly (not when imported by tests via supertest).",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "if (require.main === module) {",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "start();",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "module.exports = app;",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:22.684Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:55:48.758Z",
+    "tool": "Write",
+    "file": "src/modules/auth/auth.controller.js",
+    "linesAdded": 37,
+    "linesRemoved": 0,
+    "net": 37,
+    "addedLines": [
+      {
+        "text": "// auth.controller.js — Express request handlers for the auth endpoints (register, login, refresh, logout).",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 6 — Auth): validates incoming requests, delegates to auth.service,",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// and shapes HTTP responses (including setting the httpOnly refresh-token cookie per Section 8).",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// TODO: implement register, login, refresh, logout handlers, calling auth.service.js",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "//   - register: validate body, call authService.registerUser, return created user (no passwordHash)",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "//   - login:    validate credentials via authService, set httpOnly refresh cookie, return access token",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "//   - refresh:  read refresh cookie, call authService to rotate + issue a new access token",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "//   - logout:   invalidate the refresh token and clear the cookie",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "async function register(req, res, next) {",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// TODO: call auth.service.js",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "async function login(req, res, next) {",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// TODO: call auth.service.js",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "async function refresh(req, res, next) {",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// TODO: call auth.service.js",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "async function logout(req, res, next) {",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "// TODO: call auth.service.js",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "module.exports = { register, login, refresh, logout };",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:48.758Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:55:53.082Z",
+    "tool": "Write",
+    "file": "src/modules/auth/auth.service.js",
+    "linesAdded": 14,
+    "linesRemoved": 0,
+    "net": 14,
+    "addedLines": [
+      {
+        "text": "// auth.service.js — Business logic for authentication (user creation, password hashing, JWT issue/verify/refresh).",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 8): issues JWT access tokens (15 min) + refresh tokens (7 days),",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "// verifies credentials, and handles refresh-token rotation/invalidation.",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "// TODO: implement business logic",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "//   - hash password with bcrypt on registration; never store the raw password (Spec 7.3)",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "//   - validate credentials on login (bcrypt.compare against User.passwordHash)",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "//   - generate JWT access (JWT_ACCESS_SECRET, 15m) + refresh (JWT_REFRESH_SECRET, 7d) tokens",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "//   - verify/rotate refresh tokens; invalidate on logout",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "// TODO: implement register/login/token helpers and export them here.",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "module.exports = {};",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:53.082Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:55:55.750Z",
+    "tool": "Write",
+    "file": "src/modules/auth/auth.routes.js",
+    "linesAdded": 22,
+    "linesRemoved": 0,
+    "net": 22,
+    "addedLines": [
+      {
+        "text": "// auth.routes.js — Express router mapping auth endpoints to controller handlers.",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "// Endpoints (see Spec Section 6 — Auth):",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "//   POST /api/auth/register  — Register new user",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "//   POST /api/auth/login     — Login, returns JWT",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "//   POST /api/auth/refresh   — Refresh access token",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "//   POST /api/auth/logout    — Invalidate refresh token",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "// NOTE: rate limiting (express-rate-limit) should be applied to /register and /login (Spec Section 8).",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "const express = require('express');",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "const authController = require('./auth.controller');",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "const router = express.Router();",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "router.post('/register', authController.register);",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "router.post('/login', authController.login);",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "router.post('/refresh', authController.refresh);",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "router.post('/logout', authController.logout);",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "module.exports = router;",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:55:55.750Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:56:18.956Z",
+    "tool": "Write",
+    "file": "src/modules/customer/customer.controller.js",
+    "linesAdded": 41,
+    "linesRemoved": 0,
+    "net": 41,
+    "addedLines": [
+      {
+        "text": "// customer.controller.js — Express request handlers for customer CRUD (Spec Section 6 — Customers).",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// TODO: implement CRUD handlers matching Section 6 endpoints, delegating to customer.service:",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "//   listCustomers  GET    /api/customers      — paginated (default limit 20) + filterable (Spec 8)",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "//   getCustomer    GET    /api/customers/:id  — fetch one, 404 if not found",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "//   createCustomer POST   /api/customers      — validate DTO, create, write AuditLog (Spec 7.3)",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "//   updateCustomer PUT    /api/customers/:id  — validate, update, write AuditLog with before/after",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "//   deleteCustomer DELETE /api/customers/:id  — delete/archive, write AuditLog",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "async function listCustomers(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// TODO: call customer.service.js (paginated list)",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "async function getCustomer(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// TODO: call customer.service.js",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "async function createCustomer(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// TODO: call customer.service.js",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "async function updateCustomer(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// TODO: call customer.service.js",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "async function deleteCustomer(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "// TODO: call customer.service.js",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "module.exports = { listCustomers, getCustomer, createCustomer, updateCustomer, deleteCustomer };",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:18.956Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:56:21.840Z",
+    "tool": "Write",
+    "file": "src/modules/customer/customer.service.js",
+    "linesAdded": 12,
+    "linesRemoved": 0,
+    "net": 12,
+    "addedLines": [
+      {
+        "text": "// customer.service.js — Business logic for customer CRUD operations.",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "// TODO: implement business logic for each CRUD op",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "//   - list:   query Customer with pagination (default limit 20) + optional filters (Spec 8)",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "//   - get:    find by id",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "//   - create: validate + persist Customer, set createdBy from req.user, write AuditLog (Spec 7.3)",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "//   - update: apply changes, write AuditLog capturing before/after state",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "//   - delete: delete/archive the customer, write AuditLog",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "// TODO: implement and export the service functions used by customer.controller.js.",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "module.exports = {};",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:21.840Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:56:25.356Z",
+    "tool": "Write",
+    "file": "src/modules/customer/customer.routes.js",
+    "linesAdded": 23,
+    "linesRemoved": 0,
+    "net": 23,
+    "addedLines": [
+      {
+        "text": "// customer.routes.js — Express router for the 5 customer endpoints (Spec Section 6 — Customers).",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "//   GET    /api/customers       — List customers (paginated, filterable)",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "//   GET    /api/customers/:id   — Get customer details",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "//   POST   /api/customers       — Create customer",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "//   PUT    /api/customers/:id   — Update customer",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "//   DELETE /api/customers/:id   — Delete/archive customer",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "// NOTE: protect these routes with auth.middleware once auth is implemented (Spec Section 8).",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "const express = require('express');",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "const customerController = require('./customer.controller');",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "const router = express.Router();",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "router.get('/', customerController.listCustomers);",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "router.get('/:id', customerController.getCustomer);",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "router.post('/', customerController.createCustomer);",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "router.put('/:id', customerController.updateCustomer);",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "router.delete('/:id', customerController.deleteCustomer);",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "module.exports = router;",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:25.356Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:56:44.058Z",
+    "tool": "Write",
+    "file": "src/modules/invoice/invoice.controller.js",
+    "linesAdded": 66,
+    "linesRemoved": 0,
+    "net": 66,
+    "addedLines": [
+      {
+        "text": "// invoice.controller.js — Express request handlers for invoices (Spec Section 6 — Invoices).",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// TODO: implement CRUD + PDF download + send-email handlers matching Section 6 endpoints,",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//       delegating to invoice.service:",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//   listInvoices    GET    /api/invoices          — paginated; filter by status, customer, date range",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//   getInvoice      GET    /api/invoices/:id      — fetch one, 404 if not found",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//   createInvoice   POST   /api/invoices          — requires Idempotency-Key header (Spec 7.1);",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//                                                    creates invoice + updates customer balance +",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//                                                    writes AuditLog inside a transaction (Spec 7.2)",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//   updateInvoice   PUT    /api/invoices/:id      — validate + update, write AuditLog",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//   cancelInvoice   DELETE /api/invoices/:id      — set status 'cancelled', write AuditLog",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//   downloadPdf     GET    /api/invoices/:id/pdf  — stream/return the generated PDF (utils/pdfGenerator)",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "//   sendInvoice     POST   /api/invoices/:id/send — enqueue the invoiceReminder job (PDF + email)",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "async function listInvoices(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// TODO: call invoice.service.js (paginated + filterable list)",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "async function getInvoice(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// TODO: call invoice.service.js",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "async function createInvoice(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// TODO: call invoice.service.js (idempotency middleware runs before this on the POST route)",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "async function updateInvoice(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// TODO: call invoice.service.js",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "async function cancelInvoice(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// TODO: call invoice.service.js",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "async function downloadPdf(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// TODO: call invoice.service.js / utils/pdfGenerator",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "async function sendInvoice(req, res, next) {",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "// TODO: enqueue invoiceReminder job (PDF + email) via jobs/",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "module.exports = {",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "listInvoices,",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "getInvoice,",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "createInvoice,",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "updateInvoice,",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "cancelInvoice,",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "downloadPdf,",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "sendInvoice,",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "};",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:44.058Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:56:47.852Z",
+    "tool": "Write",
+    "file": "src/modules/invoice/invoice.service.js",
+    "linesAdded": 17,
+    "linesRemoved": 0,
+    "net": 17,
+    "addedLines": [
+      {
+        "text": "// invoice.service.js — Business logic for invoices.",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "// TODO: implement business logic for each operation.",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "// IMPORTANT PATTERNS:",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//   - use MongoDB transaction here per Section 7.2: the create flow does",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//       Invoice.create() + Customer balance update + AuditLog.create()",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//     and MUST be wrapped in session.withTransaction() for all-or-nothing consistency.",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//   - use idempotency middleware on create route per Section 7.1: the POST /api/invoices route",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//     is guarded by idempotency.middleware so duplicate submissions don't create duplicate invoices.",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//   - auto-generate invoiceNumber (e.g. \"INV-2026-0042\") and compute item totals / subtotal /",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//     totalAmount at creation time.",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "//   - for recurring invoices, schedule the recurringInvoice job (Spec 7.4).",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "// TODO: implement and export the service functions used by invoice.controller.js.",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "module.exports = {};",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:47.852Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:56:53.136Z",
+    "tool": "Write",
+    "file": "src/modules/invoice/invoice.routes.js",
+    "linesAdded": 29,
+    "linesRemoved": 0,
+    "net": 29,
+    "addedLines": [
+      {
+        "text": "// invoice.routes.js — Express router for invoice endpoints (Spec Section 6 — Invoices).",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//   GET    /api/invoices          — List invoices (filter by status, customer, date range)",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//   GET    /api/invoices/:id      — Get invoice detail",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//   POST   /api/invoices          — Create invoice (requires Idempotency-Key header, Spec 7.1)",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//   PUT    /api/invoices/:id      — Update invoice",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//   DELETE /api/invoices/:id      — Cancel invoice",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//   GET    /api/invoices/:id/pdf  — Download invoice PDF",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//   POST   /api/invoices/:id/send — Send invoice email to customer",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "// NOTE: protect these routes with auth.middleware once auth is implemented (Spec Section 8).",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "const express = require('express');",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "const invoiceController = require('./invoice.controller');",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "const idempotencyMiddleware = require('../../middleware/idempotency.middleware');",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "const router = express.Router();",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "router.get('/', invoiceController.listInvoices);",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "router.get('/:id', invoiceController.getInvoice);",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "// idempotencyMiddleware runs BEFORE the controller — duplicate keys short-circuit (Spec 7.1).",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "router.post('/', idempotencyMiddleware, invoiceController.createInvoice);",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "router.put('/:id', invoiceController.updateInvoice);",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "router.delete('/:id', invoiceController.cancelInvoice);",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "router.get('/:id/pdf', invoiceController.downloadPdf);",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "router.post('/:id/send', invoiceController.sendInvoice);",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "module.exports = router;",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:56:53.136Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:57:04.811Z",
+    "tool": "Write",
+    "file": "src/modules/payment/payment.controller.js",
+    "linesAdded": 29,
+    "linesRemoved": 0,
+    "net": 29,
+    "addedLines": [
+      {
+        "text": "// payment.controller.js — Express request handlers for payments (Spec Section 6 — Payments).",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "// TODO: implement record + list handlers, delegating to payment.service:",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "//   listPayments  GET  /api/payments      — paginated list (default limit 20, Spec 8)",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "//   getPayment    GET  /api/payments/:id  — fetch one, 404 if not found",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "//   recordPayment POST /api/payments      — requires Idempotency-Key header (Spec 7.1);",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "//                                            records payment + updates invoice/customer balance +",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "//                                            writes AuditLog inside a transaction (Spec 7.2)",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "async function listPayments(req, res, next) {",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "// TODO: call payment.service.js (paginated list)",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "async function getPayment(req, res, next) {",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "// TODO: call payment.service.js",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "async function recordPayment(req, res, next) {",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "// TODO: call payment.service.js (idempotency middleware runs before this on the POST route)",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "module.exports = { listPayments, getPayment, recordPayment };",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:04.811Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:57:07.714Z",
+    "tool": "Write",
+    "file": "src/modules/payment/payment.service.js",
+    "linesAdded": 14,
+    "linesRemoved": 0,
+    "net": 14,
+    "addedLines": [
+      {
+        "text": "// payment.service.js — Business logic for payments.",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "// TODO: implement business logic.",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "// IMPORTANT PATTERNS:",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "//   - use idempotency middleware per Section 7.1: POST /api/payments is guarded by",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "//     idempotency.middleware so retries/double-clicks don't record duplicate payments.",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "//   - use a MongoDB transaction per Section 7.2 for the record flow: Payment.create() +",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "//     Invoice/Customer balance update + AuditLog.create() wrapped in session.withTransaction().",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "//   - never log payment card data in the AuditLog (Spec 7.3).",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "// TODO: implement and export the service functions used by payment.controller.js.",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "module.exports = {};",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:07.714Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:57:10.857Z",
+    "tool": "Write",
+    "file": "src/modules/payment/payment.routes.js",
+    "linesAdded": 21,
+    "linesRemoved": 0,
+    "net": 21,
+    "addedLines": [
+      {
+        "text": "// payment.routes.js — Express router for payment endpoints (Spec Section 6 — Payments).",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "//   GET  /api/payments      — List payments",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "//   POST /api/payments      — Record payment (requires Idempotency-Key header, Spec 7.1)",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "//   GET  /api/payments/:id  — Payment detail",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "// NOTE: apply express-rate-limit + auth.middleware to these routes once implemented (Spec Section 8).",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "const express = require('express');",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "const paymentController = require('./payment.controller');",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "const idempotencyMiddleware = require('../../middleware/idempotency.middleware');",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "const router = express.Router();",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "router.get('/', paymentController.listPayments);",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "// idempotencyMiddleware runs BEFORE the controller — duplicate keys short-circuit (Spec 7.1).",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "router.post('/', idempotencyMiddleware, paymentController.recordPayment);",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "router.get('/:id', paymentController.getPayment);",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "module.exports = router;",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:10.857Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:57:21.245Z",
+    "tool": "Write",
+    "file": "src/modules/notification/notification.controller.js",
+    "linesAdded": 11,
+    "linesRemoved": 0,
+    "net": 11,
+    "addedLines": [
+      {
+        "text": "// notification.controller.js — intentionally has NO HTTP handlers.",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "// N/A: this module is triggered by BullMQ jobs, not by direct API calls. There are no routes",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "// in Section 6 for notifications — the worker (workers/invoice.worker.js) invokes",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "// notification.service.js to send emails after PDF generation (Spec Section 7.4).",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "// This file exists only to keep the module's controller → service → routes shape consistent.",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "// If notifications ever need an HTTP surface (e.g. resend, delivery status), add handlers here.",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "module.exports = {};",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:21.245Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:57:24.279Z",
+    "tool": "Write",
+    "file": "src/modules/notification/notification.service.js",
+    "linesAdded": 11,
+    "linesRemoved": 0,
+    "net": 11,
+    "addedLines": [
+      {
+        "text": "// notification.service.js — email-sending logic used by the worker (wraps Nodemailer, Spec Section 2).",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "// TODO: implement send-email logic used by the worker.",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "//   - create a Nodemailer transport from SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS (Spec Section 9)",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "//   - sendInvoiceEmail(invoiceId, pdfPath): load invoice + customer, build the message from",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "//     utils/emailTemplates, attach the generated PDF, and send it",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "//   - used by workers/invoice.worker.js after PDF generation (Spec Section 7.4)",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "// TODO: implement and export the notification functions used by the worker.",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "module.exports = {};",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:24.279Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:57:46.181Z",
+    "tool": "Write",
+    "file": "src/jobs/invoiceReminder.job.js",
+    "linesAdded": 17,
+    "linesRemoved": 0,
+    "net": 17,
+    "addedLines": [
+      {
+        "text": "// invoiceReminder.job.js — BullMQ job producer: enqueues PDF generation + reminder/invoice email.",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 7.4): after an invoice is created/regenerated, add a job to the",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "// \"invoiceJobs\" queue; the worker then runs PDFKit (generate PDF) + Nodemailer (send email).",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "// TODO: implement the job producer.",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "//   const { Queue } = require('bullmq');",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "//   const connection = require('../config/redis');",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "//   const invoiceQueue = new Queue('invoiceJobs', { connection });",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "//   await invoiceQueue.add('generatePDF', { invoiceId }, {",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "//     attempts: 3, backoff: { type: 'exponential', delay: 5000 },",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "//   });",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "// NOTE: the queue name ('invoiceJobs') MUST match workers/invoice.worker.js exactly.",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "// TODO: export an enqueue helper (e.g. enqueueInvoiceReminder(invoiceId)) once implemented.",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "module.exports = {};",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:46.181Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:57:50.432Z",
+    "tool": "Write",
+    "file": "src/jobs/recurringInvoice.job.js",
+    "linesAdded": 18,
+    "linesRemoved": 0,
+    "net": 18,
+    "addedLines": [
+      {
+        "text": "// recurringInvoice.job.js — BullMQ job producer: schedules recurring invoice regeneration.",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 7.4): scheduled with a cron pattern per the invoice's recurringCycle",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "// (monthly/quarterly/yearly). When it fires, the worker creates a new Invoice document and queues",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "// the invoiceReminder job (PDF + email).",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "// TODO: implement the recurring job producer.",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "//   const { Queue } = require('bullmq');",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "//   const connection = require('../config/redis');",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "//   const invoiceQueue = new Queue('invoiceJobs', { connection });",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "//   await invoiceQueue.add('regenerateRecurring', { invoiceId }, {",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "//     repeat: { pattern: cronForCycle(recurringCycle) },  // monthly/quarterly/yearly",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "//   });",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "// NOTE: the queue name ('invoiceJobs') MUST match workers/invoice.worker.js exactly.",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "// TODO: export a scheduling helper once implemented.",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "module.exports = {};",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:50.432Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:57:55.608Z",
+    "tool": "Write",
+    "file": "src/workers/invoice.worker.js",
+    "linesAdded": 22,
+    "linesRemoved": 0,
+    "net": 22,
+    "addedLines": [
+      {
+        "text": "// invoice.worker.js — BullMQ worker process (runs separately from the API) consuming the \"invoiceJobs\" queue.",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 7.4 / 7.6): listens on the \"invoiceJobs\" queue; for each job it",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "// generates the PDF (utils/pdfGenerator) and sends the email (modules/notification). Started as",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "// its own process: `node src/workers/invoice.worker.js` (npm run worker).",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "// TODO: implement the worker.",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//   const { Worker } = require('bullmq');",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//   const connection = require('../config/redis');",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//   const { generatePDF } = require('../utils/pdfGenerator');",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//   const { sendInvoiceEmail } = require('../modules/notification/notification.service');",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//   const worker = new Worker('invoiceJobs', async (job) => {",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//     if (job.name === 'generatePDF') {",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//       const pdfPath = await generatePDF(job.data.invoiceId);",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//       await sendInvoiceEmail(job.data.invoiceId, pdfPath);",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//     }",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//   }, { connection });",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "// NOTE: deliberately NOT connecting to Redis yet — this is a scaffold stub so `npm run worker`",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "//       starts and exits cleanly without a running Redis instance.",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "console.log('[worker] invoice.worker.js — not implemented yet (scaffold stub). See Spec Section 7.4.');",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:57:55.608Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:58:08.647Z",
+    "tool": "Write",
+    "file": "src/utils/pdfGenerator.js",
+    "linesAdded": 20,
+    "linesRemoved": 0,
+    "net": 20,
+    "addedLines": [
+      {
+        "text": "// pdfGenerator.js — Utility that renders an invoice into a PDF document using PDFKit (Spec Section 2).",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "// Purpose (see Spec Section 7.4): given an invoiceId, lays out and generates the invoice PDF,",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "// returning the stored PDF path/URL used to populate Invoice.pdfUrl.",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "// TODO: use PDFKit to generate the invoice PDF, referencing Invoice + Customer data.",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "//   - load the Invoice (and its Customer) by invoiceId",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "//   - build a PDFDocument: header/logo, customer + billing address, line items table",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "//     (description / quantity / unitPrice / total), subtotal, tax, totalAmount, due date",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "//   - write it to storage and return the path/URL (see Open Item: PDF storage, Spec Section 14)",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "//   - consider extracting the layout into an `invoice-pdf-generation` skill when it stabilizes",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "async function generatePDF(invoiceId) {",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "// TODO: implement PDFKit generation and return the stored PDF path/URL.",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "throw new Error('pdfGenerator.generatePDF not implemented (scaffold).');",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "module.exports = { generatePDF };",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:08.647Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:58:13.783Z",
+    "tool": "Write",
+    "file": "src/utils/emailTemplates.js",
+    "linesAdded": 24,
+    "linesRemoved": 0,
+    "net": 24,
+    "addedLines": [
+      {
+        "text": "// emailTemplates.js — Email template builders for invoice/reminder emails (Spec Section 7.4).",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "// Purpose: builds the subject + HTML/text body for invoice and reminder emails. The actual",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "// sending is done by modules/notification/notification.service.js (which wraps Nodemailer).",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "// TODO: implement email templates for invoice reminders.",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "//   - invoiceEmailTemplate({ customer, invoice }) → { subject, html, text }",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "//   - reminderEmailTemplate({ customer, invoice }) → { subject, html, text } for overdue/upcoming",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "//   - keep templates data-driven; never embed secrets or payment card data (Spec 7.3)",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "function invoiceEmailTemplate({ customer, invoice } = {}) {",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "// TODO: return { subject, html, text } for a newly issued invoice.",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "throw new Error('emailTemplates.invoiceEmailTemplate not implemented (scaffold).');",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "// eslint-disable-next-line no-unused-vars",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "function reminderEmailTemplate({ customer, invoice } = {}) {",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "// TODO: return { subject, html, text } for a payment reminder.",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "throw new Error('emailTemplates.reminderEmailTemplate not implemented (scaffold).');",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "}",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "module.exports = { invoiceEmailTemplate, reminderEmailTemplate };",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:13.783Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:58:48.427Z",
+    "tool": "Write",
+    "file": "tests/auth.test.js",
+    "linesAdded": 13,
+    "linesRemoved": 0,
+    "net": 13,
+    "addedLines": [
+      {
+        "text": "// auth.test.js — placeholder tests for the auth module (Spec Section 6 — Auth).",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "// Uses it.todo so the suite is valid (won't fail) until the real tests land.",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "describe('auth module', () => {",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "// TODO: test register / login / refresh / logout flows",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "it.todo('registers a new user and hashes the password (never stores raw password)');",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "it.todo('logs in with valid credentials and returns a JWT access token');",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "it.todo('sets an httpOnly refresh-token cookie on login (Spec Section 8)');",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "it.todo('rejects invalid credentials with 401');",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "it.todo('refresh rotates the refresh token and issues a new access token');",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "it.todo('logout invalidates the refresh token');",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:48.427Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:58:51.196Z",
+    "tool": "Write",
+    "file": "tests/customer.test.js",
+    "linesAdded": 12,
+    "linesRemoved": 0,
+    "net": 12,
+    "addedLines": [
+      {
+        "text": "// customer.test.js — placeholder tests for the customer module (Spec Section 6 — Customers).",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "// Uses it.todo so the suite is valid (won't fail) until the real tests land.",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "describe('customer module', () => {",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "// TODO: test CRUD operations",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "it.todo('lists customers with pagination (default limit 20)');",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "it.todo('gets a customer by id (404 when missing)');",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "it.todo('creates a customer and writes an AuditLog entry');",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "it.todo('updates a customer and records before/after in the AuditLog');",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "it.todo('deletes/archives a customer');",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:51.196Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:58:55.542Z",
+    "tool": "Write",
+    "file": "tests/invoice.test.js",
+    "linesAdded": 21,
+    "linesRemoved": 0,
+    "net": 21,
+    "addedLines": [
+      {
+        "text": "// invoice.test.js — placeholder tests for the invoice module (Spec Section 6 — Invoices).",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "// Uses it.todo so the suite is valid (won't fail) until the real tests land.",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "describe('invoice module', () => {",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "// TODO: test CRUD operations",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "it.todo('lists invoices with filters (status, customer, date range) + pagination');",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "it.todo('gets an invoice by id (404 when missing)');",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "it.todo('creates an invoice, updates customer balance, and writes AuditLog in a transaction (Spec 7.2)');",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "it.todo('rolls back the whole invoice-create transaction if any step fails (Spec 7.2)');",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "it.todo('updates and cancels an invoice');",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "it.todo('downloads the invoice PDF');",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "it.todo('sends the invoice email (enqueues the job)');",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "// TODO: idempotency duplicate-key test (Spec Section 7.1) — POST /api/invoices",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "//   send the SAME Idempotency-Key twice and assert:",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "//     - only ONE invoice is created in the database",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "//     - the second response equals the first (same status code + body)",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "//     - after TTL expiry, a fresh key behaves as a new request",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "it.todo('creates only one invoice when the same Idempotency-Key is sent twice (Spec 7.1)');",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:55.542Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:58:58.857Z",
+    "tool": "Write",
+    "file": "tests/payment.test.js",
+    "linesAdded": 17,
+    "linesRemoved": 0,
+    "net": 17,
+    "addedLines": [
+      {
+        "text": "// payment.test.js — placeholder tests for the payment module (Spec Section 6 — Payments).",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "// Uses it.todo so the suite is valid (won't fail) until the real tests land.",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "describe('payment module', () => {",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "// TODO: test CRUD operations",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "it.todo('lists payments with pagination (default limit 20)');",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "it.todo('gets a payment by id (404 when missing)');",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "it.todo('records a payment, updates balances, and writes AuditLog in a transaction (Spec 7.2)');",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "// TODO: idempotency duplicate-key test (Spec Section 7.1) — POST /api/payments",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "//   send the SAME Idempotency-Key twice and assert:",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "//     - only ONE payment is created in the database",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "//     - the second response equals the first (same status code + body)",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "//     - after TTL expiry, a fresh key behaves as a new request",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "it.todo('records only one payment when the same Idempotency-Key is sent twice (Spec 7.1)');",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:58:58.857Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:59:01.659Z",
+    "tool": "Write",
+    "file": "tests/notification.test.js",
+    "linesAdded": 11,
+    "linesRemoved": 0,
+    "net": 11,
+    "addedLines": [
+      {
+        "text": "// notification.test.js — placeholder tests for the notification module (Spec Section 7.4).",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "// Notifications are worker-triggered (no HTTP routes); tests exercise the service directly.",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "// Uses it.todo so the suite is valid (won't fail) until the real tests land.",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "describe('notification module', () => {",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "// TODO: test email sending",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "it.todo('sendInvoiceEmail builds the message from the template and sends via Nodemailer');",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "it.todo('attaches the generated PDF to the invoice email');",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "it.todo('never includes secrets or payment card data in the email (Spec 7.3)');",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:59:01.659Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T03:59:06.763Z",
+    "tool": "Write",
+    "file": "tests/idempotency.test.js",
+    "linesAdded": 19,
+    "linesRemoved": 0,
+    "net": 19,
+    "addedLines": [
+      {
+        "text": "// idempotency.test.js — the required idempotency duplicate-key test (Spec Section 7.1 test example).",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "// This is the canonical duplicate-key test called out by the idempotent-endpoint skill (Step 4).",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "// It applies to every idempotent POST route (currently /api/invoices and /api/payments).",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "//",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "// Suggested setup once implemented: mongodb-memory-server for an isolated DB + supertest for HTTP.",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "// Uses it.todo so the suite is valid (won't fail) until the real tests land.",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "describe('idempotency middleware (Spec 7.1)', () => {",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "// TODO: idempotency duplicate-key test",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "//   1. POST with a given Idempotency-Key → expect 201 and a created record",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "//   2. POST again with the SAME key → expect the SAME status + body, and NO new record",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "//   3. Assert exactly one record exists in the database",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "it.todo('second request with the same Idempotency-Key returns the cached response, no duplicate write');",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "it.todo('exactly one record is created after two identical requests');",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "it.todo('a fresh Idempotency-Key after TTL expiry is treated as a new request');",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "it.todo('requests without an Idempotency-Key skip the cache and proceed normally');",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "});",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T03:59:06.763Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T04:19:33.258Z",
+    "tool": "Write",
+    "file": "/Users/c2197920/.claude/projects/-Users-c2197920-Desktop-BillFlow/memory/sandbox-network-and-bind-restrictions.md",
+    "linesAdded": 26,
+    "linesRemoved": 0,
+    "net": 26,
+    "addedLines": [
+      {
+        "text": "---",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "name: sandbox-network-and-bind-restrictions",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "description: Claude Code sandbox here blocks outbound network and socket bind — affects npm native builds and running the backend server",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "metadata:",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "type: project",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "---",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "The Claude Code security sandbox on this machine blocks (1) outbound network to",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "nodejs.org, github.com, and even registry.npmjs.org (raw curl → HTTP 403 \"Domain",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "blocked\"), and (2) binding a listening socket (`app.listen`/supertest → `listen EPERM`).",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "**Why:** Environment security constraints, not code defects. Discovered while scaffolding",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "the BillFlow backend (2026-08-17).",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "**How to apply:**",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "- `npm install` fails on the `bcrypt` native addon: no prebuilt binary for Node 24, and",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "the source build can't fetch Node headers (nodejs.org blocked) or the prebuilt binary",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "(github.com blocked). The toolchain (clang 16, python3) IS present — it's purely network.",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "Workarounds: run install via Bash with `dangerouslyDisableSandbox: true`, add the domains",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "to `.claude/apple/dangerous_allowed_domains.csv`, or swap `bcrypt` → `bcryptjs` (pure JS).",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "`npm install --ignore-scripts` succeeds and proves the dependency tree resolves.",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "- Can't HTTP-smoke-test a server here (socket bind denied). Verify boot instead by",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "`require()`-ing the app and walking `app._router.stack`; models via `mongoose.modelNames()`.",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "- The machine's default `node` is v14.17.6 (below the backend's `engines: >=20`). Use nvm:",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "`. ~/.nvm/nvm.sh && nvm use 24.18.1` (v18.20.8 also available).",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T04:19:33.258Z"
+      }
+    ],
+    "removedLines": []
+  },
+  {
+    "timestamp": "2026-08-17T04:19:44.699Z",
+    "tool": "Write",
+    "file": "/Users/c2197920/.claude/projects/-Users-c2197920-Desktop-BillFlow/memory/MEMORY.md",
+    "linesAdded": 4,
+    "linesRemoved": 0,
+    "net": 4,
+    "addedLines": [
+      {
+        "text": "# BillFlow — Memory Index",
+        "firstSeen": "2026-08-17T04:19:44.699Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T04:19:44.699Z"
+      },
+      {
+        "text": "- [Sandbox network & bind restrictions](sandbox-network-and-bind-restrictions.md) — why `npm install` (bcrypt) and running the server fail here; use nvm Node 24 + `--ignore-scripts`.",
+        "firstSeen": "2026-08-17T04:19:44.699Z"
+      },
+      {
+        "text": "",
+        "firstSeen": "2026-08-17T04:19:44.699Z"
+      }
+    ],
+    "removedLines": []
+  }
+]
