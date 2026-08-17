@@ -1,1 +1,47 @@
-<!-- TODO: build the login form (email + password) here -->
+<!-- login.component.html — centered auth card (email + password).
+     Plain semantic inputs only; form binding + submit stay TODO in the .ts.
+     "Create one" uses routerLink (requires RouterLink import in the .ts). -->
+<div class="auth-page">
+  <section class="auth-card">
+    <header class="auth-card__head">
+      <span class="auth-card__logo" aria-hidden="true">B</span>
+      <h1 class="auth-card__title">Welcome back</h1>
+      <p class="auth-card__subtitle">Sign in to your BillFlow account</p>
+    </header>
+
+    <form class="auth-form" novalidate>
+      <div class="field">
+        <label class="field__label" for="login-email">Email</label>
+        <input
+          class="field__input"
+          id="login-email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          placeholder="you@company.com"
+          required />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="login-password">Password</label>
+        <input
+          class="field__input"
+          id="login-password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          required />
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--block">
+        Sign in
+      </button>
+    </form>
+
+    <p class="auth-card__foot">
+      Don't have an account?
+      <a routerLink="/auth/register">Create one</a>
+    </p>
+  </section>
+</div>

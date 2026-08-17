@@ -1,1 +1,221 @@
-/* TODO: styles for invoice-form.component */
+/* invoice-form.component.css — form card, repeatable line-item rows, totals.
+   Scoped to this component; values from styles.css tokens. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 860px;
+}
+
+.page__title { font-size: var(--text-h1); }
+
+.page__subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--space-1);
+}
+
+.form-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.form-section {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-5) 0 0;
+  margin: 0;
+}
+.form-section:first-of-type { border-top: none; padding-top: 0; }
+
+.form-section__title {
+  padding: 0;
+  font-size: var(--text-h4);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.field { display: flex; flex-direction: column; gap: var(--space-2); }
+.field--full { grid-column: 1 / -1; }
+
+.field__label {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-body);
+}
+
+.req { color: var(--color-danger); }
+
+.field__input {
+  width: 100%;
+  padding: var(--space-3);
+  font-size: var(--text-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.field__input::placeholder { color: var(--color-text-subtle); }
+.field__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ------- Line items ------- */
+.items { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.items__head,
+.items__row {
+  display: grid;
+  grid-template-columns: 1fr 80px 120px 110px 36px;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.items__head {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  font-weight: var(--fw-semibold);
+  padding: 0 var(--space-1) var(--space-1);
+}
+
+.items__total {
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+.items__empty {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  padding: var(--space-4);
+  text-align: center;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius);
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-radius: var(--radius);
+  transition: background var(--transition), color var(--transition);
+}
+.icon-btn:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.add-item { align-self: flex-start; margin-top: var(--space-3); }
+
+/* ------- Totals summary ------- */
+.summary {
+  margin-left: auto;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.summary__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-body);
+  color: var(--color-text-body);
+}
+
+.summary__label { font-size: var(--text-body); }
+
+.summary__tax { width: 120px; }
+
+.summary__row--total {
+  border-top: 1px solid var(--color-border-strong);
+  padding-top: var(--space-3);
+  margin-top: var(--space-1);
+  font-size: var(--text-h4);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+
+/* ------- Actions ------- */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-body);
+  font-weight: var(--fw-medium);
+  transition: background var(--transition), border-color var(--transition);
+}
+.btn--sm { padding: var(--space-2) var(--space-3); font-size: var(--text-sm); }
+
+.btn--primary { background: var(--color-primary); color: var(--color-on-primary); }
+.btn--primary:hover { background: var(--color-primary-hover); }
+
+.btn--ghost {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-body);
+}
+.btn--ghost:hover { background: var(--color-surface-alt); }
+
+@media (max-width: 680px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .items__head { display: none; }
+  .items__row {
+    grid-template-columns: 1fr 36px;
+    grid-template-areas:
+      "desc  remove"
+      "qty   remove"
+      "price remove"
+      "total remove";
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+  }
+  .summary { max-width: none; }
+  .form-actions { flex-direction: column-reverse; }
+  .btn { width: 100%; }
+}

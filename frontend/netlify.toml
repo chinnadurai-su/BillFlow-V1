@@ -1,6 +1,6 @@
 [build]
   command = "npx ng build"
-  publish = "dist/frontend/browser"
+  publish = "dist/billflow/browser"
 
 [[redirects]]
   from = "/*"

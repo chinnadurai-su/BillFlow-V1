@@ -1,4 +1,5 @@
 // invoice.controller.js — Express request handlers for invoices (Spec Section 6 — Invoices).
+const invoiceService = require('./invoice.service');
 //
 // TODO: implement CRUD + PDF download + send-email handlers matching Section 6 endpoints,
 //       delegating to invoice.service:
@@ -13,53 +14,47 @@
 //   sendInvoice     POST   /api/invoices/:id/send — enqueue the invoiceReminder job (PDF + email)
 
 // eslint-disable-next-line no-unused-vars
-async function listInvoices(req, res, next) {
+exports.listInvoices = async (req, res, next) => {
   // TODO: call invoice.service.js (paginated + filterable list)
-  return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
-}
+  invoiceService.listInvoices(req.query, req.pagination)
+    .then(invoices => res.status(200).json({ success: true, data: invoices }))
+    .catch(err => next(err));
+};
 
 // eslint-disable-next-line no-unused-vars
-async function getInvoice(req, res, next) {
+exports.getInvoice = async (req, res, next) => {
   // TODO: call invoice.service.js
   return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
-}
+};
 
 // eslint-disable-next-line no-unused-vars
-async function createInvoice(req, res, next) {
+exports.createInvoice = async (req, res, next) => {
   // TODO: call invoice.service.js (idempotency middleware runs before this on the POST route)
   return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
-}
+};
 
 // eslint-disable-next-line no-unused-vars
-async function updateInvoice(req, res, next) {
+exports.updateInvoice = async (req, res, next) => {
   // TODO: call invoice.service.js
   return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
 }
 
 // eslint-disable-next-line no-unused-vars
-async function cancelInvoice(req, res, next) {
+exports.cancelInvoice = async (req, res, next) => {
   // TODO: call invoice.service.js
   return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
 }
 
 // eslint-disable-next-line no-unused-vars
-async function downloadPdf(req, res, next) {
+exports.downloadPdf = async (req, res, next) => {
   // TODO: call invoice.service.js / utils/pdfGenerator
   return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
 }
 
 // eslint-disable-next-line no-unused-vars
-async function sendInvoice(req, res, next) {
+exports.sendInvoice = async (req, res, next) => {
   // TODO: enqueue invoiceReminder job (PDF + email) via jobs/
   return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
 }
 
-module.exports = {
-  listInvoices,
-  getInvoice,
-  createInvoice,
-  updateInvoice,
-  cancelInvoice,
-  downloadPdf,
-  sendInvoice,
-};
+

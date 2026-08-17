@@ -1,1 +1,66 @@
-/* TODO: styles for confirm-dialog.component */
+/* confirm-dialog.component.css — modal overlay + centered dialog card. */
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-5);
+  animation: dialog-in 150ms ease;
+}
+
+.dialog__title {
+  font-size: var(--text-h3);
+  margin-bottom: var(--space-2);
+}
+
+.dialog__message {
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+  margin-bottom: var(--space-5);
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* Local button primitives (scoped to this component). */
+.btn {
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-body);
+  font-weight: var(--fw-medium);
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--color-border-strong);
+  color: var(--color-text-body);
+}
+.btn--ghost:hover { background: var(--color-surface-alt); }
+
+.btn--danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+.btn--danger:hover { background: var(--color-danger-text); }
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}

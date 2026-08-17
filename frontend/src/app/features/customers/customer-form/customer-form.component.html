@@ -1,1 +1,98 @@
-<!-- TODO: build the customer create/edit form here -->
+<!-- customer-form.component.html — create/edit customer.
+     Fields match the Customer schema (Spec §5.2). Plain semantic inputs;
+     form binding + save stay TODO in the .ts. balance is server-managed
+     and intentionally not editable here.
+     Cancel uses routerLink (needs RouterLink import). -->
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1 class="page__title">New Customer</h1>
+      <p class="page__subtitle">Add a customer to start billing them</p>
+    </div>
+  </header>
+
+  <form class="form-card" novalidate>
+    <fieldset class="form-section">
+      <legend class="form-section__title">Contact details</legend>
+
+      <div class="form-grid">
+        <div class="field field--full">
+          <label class="field__label" for="cust-name">
+            Name <span class="req" aria-hidden="true">*</span>
+          </label>
+          <input
+            class="field__input"
+            id="cust-name"
+            name="name"
+            type="text"
+            placeholder="Acme Corp."
+            required />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="cust-email">
+            Email <span class="req" aria-hidden="true">*</span>
+          </label>
+          <input
+            class="field__input"
+            id="cust-email"
+            name="email"
+            type="email"
+            placeholder="billing@acme.com"
+            required />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="cust-phone">Phone</label>
+          <input
+            class="field__input"
+            id="cust-phone"
+            name="phone"
+            type="tel"
+            placeholder="+1 555 010 1234" />
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend class="form-section__title">Billing address</legend>
+
+      <div class="form-grid">
+        <div class="field field--full">
+          <label class="field__label" for="cust-line1">Address line 1</label>
+          <input
+            class="field__input"
+            id="cust-line1"
+            name="line1"
+            type="text"
+            placeholder="123 Market Street" />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="cust-city">City</label>
+          <input class="field__input" id="cust-city" name="city" type="text" />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="cust-state">State / Province</label>
+          <input class="field__input" id="cust-state" name="state" type="text" />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="cust-zip">ZIP / Postal code</label>
+          <input class="field__input" id="cust-zip" name="zip" type="text" />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="cust-country">Country</label>
+          <input class="field__input" id="cust-country" name="country" type="text" />
+        </div>
+      </div>
+    </fieldset>
+
+    <footer class="form-actions">
+      <a class="btn btn--ghost" routerLink="/customers">Cancel</a>
+      <button type="submit" class="btn btn--primary">Save customer</button>
+    </footer>
+  </form>
+</section>

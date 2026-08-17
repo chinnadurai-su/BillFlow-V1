@@ -1,2 +1,195 @@
-/* styles.css — Global stylesheet for the BillFlow SPA. */
-/* TODO: add global styles / theme tokens. */
+/* ===================================================================
+   styles.css — Global stylesheet for the BillFlow SPA.
+
+   This file holds ONLY:
+     1. Design tokens (CSS custom properties) — the single source of
+        truth for colour, typography, spacing, radius and shadow.
+     2. A minimal base reset + element defaults.
+
+   Component-specific styles live in each component's own .css file and
+   must reference the tokens below rather than hardcoding values, so the
+   whole app stays visually consistent.
+   =================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---------------------------------------------------------------
+     COLOUR — Brand
+     Deep blue primary for a trustworthy, fintech feel.
+     --------------------------------------------------------------- */
+  --color-primary:        #1d4ed8;   /* main brand / primary buttons   */
+  --color-primary-hover:  #1e40af;   /* hover / active                 */
+  --color-primary-dark:   #1e3a8a;   /* headers, emphasis              */
+  --color-primary-soft:   #eff6ff;   /* tinted backgrounds             */
+  --color-primary-border:  #bfdbfe;  /* soft borders on tinted areas   */
+  --color-on-primary:     #ffffff;   /* text/icons on primary          */
+
+  /* ---------------------------------------------------------------
+     COLOUR — Status (semantic)
+     Each status has a strong tone (dots/borders/text) and a soft
+     tint used as a badge background. Same status = same colour
+     everywhere in the app.
+     --------------------------------------------------------------- */
+  /* Success — paid / completed */
+  --color-success:        #16a34a;
+  --color-success-soft:   #dcfce7;
+  --color-success-text:   #166534;
+
+  /* Warning — overdue / pending */
+  --color-warning:        #d97706;
+  --color-warning-soft:   #fef3c7;
+  --color-warning-text:   #92400e;
+
+  /* Danger — cancelled / failed */
+  --color-danger:         #dc2626;
+  --color-danger-soft:    #fee2e2;
+  --color-danger-text:    #991b1b;
+
+  /* Info — sent / in-progress */
+  --color-info:           #2563eb;
+  --color-info-soft:      #dbeafe;
+  --color-info-text:      #1e40af;
+
+  /* Neutral — draft / archived */
+  --color-neutral:        #64748b;
+  --color-neutral-soft:   #f1f5f9;
+  --color-neutral-text:   #475569;
+
+  /* ---------------------------------------------------------------
+     COLOUR — Neutrals (surfaces, text, borders)
+     --------------------------------------------------------------- */
+  --color-bg:             #f1f5f9;   /* app background (slate-100)     */
+  --color-surface:        #ffffff;   /* cards, panels                  */
+  --color-surface-alt:    #f8fafc;   /* subtle striping / hover        */
+  --color-border:         #e2e8f0;   /* default borders                */
+  --color-border-strong:  #cbd5e1;   /* inputs, dividers               */
+
+  --color-text:           #0f172a;   /* headings (slate-900)           */
+  --color-text-body:      #334155;   /* body copy (slate-700)          */
+  --color-text-muted:     #64748b;   /* secondary text (slate-500)     */
+  --color-text-subtle:    #94a3b8;   /* placeholders, hints (slate-400)*/
+
+  /* ---------------------------------------------------------------
+     TYPOGRAPHY
+     --------------------------------------------------------------- */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+               Helvetica, Arial, sans-serif;
+  --font-mono: 'SFMono-Regular', 'Roboto Mono', ui-monospace, Menlo,
+               Consolas, monospace;
+
+  --text-h1:   1.875rem;  /* 30px */
+  --text-h2:   1.5rem;    /* 24px */
+  --text-h3:   1.25rem;   /* 20px */
+  --text-h4:   1.0625rem; /* 17px */
+  --text-body: 0.9375rem; /* 15px */
+  --text-sm:   0.8125rem; /* 13px */
+  --text-xs:   0.75rem;   /* 12px */
+
+  --lh-tight:  1.25;
+  --lh-base:   1.5;
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* ---------------------------------------------------------------
+     SPACING SCALE (4 / 8 / 12 / 16 / 24 / 32 / 48 / 64)
+     --------------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ---------------------------------------------------------------
+     RADIUS / SHADOW / MOTION
+     --------------------------------------------------------------- */
+  --radius-sm:   6px;
+  --radius:      8px;
+  --radius-lg:   12px;
+  --radius-full: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow:    0 1px 3px rgba(15, 23, 42, 0.10), 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.14);
+
+  --transition: 150ms ease;
+
+  /* ---------------------------------------------------------------
+     LAYOUT
+     --------------------------------------------------------------- */
+  --sidebar-width: 256px;
+  --topbar-height: 60px;
+  --content-max:   1200px;
+}
+
+/* ===================================================================
+   BASE RESET + ELEMENT DEFAULTS
+   =================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--lh-base);
+  color: var(--color-text-body);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  color: var(--color-text);
+  line-height: var(--lh-tight);
+  font-weight: var(--fw-semibold);
+}
+
+h1 { font-size: var(--text-h1); }
+h2 { font-size: var(--text-h2); }
+h3 { font-size: var(--text-h3); }
+h4 { font-size: var(--text-h4); }
+
+p { margin: 0; }
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+a:hover { color: var(--color-primary-hover); }
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

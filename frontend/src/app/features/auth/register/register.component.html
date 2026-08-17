@@ -1,1 +1,59 @@
-<!-- TODO: build the registration form here -->
+<!-- register.component.html — centered auth card (name + email + password).
+     Plain semantic inputs only; form binding + submit stay TODO in the .ts.
+     "Sign in" uses routerLink (requires RouterLink import in the .ts). -->
+<div class="auth-page">
+  <section class="auth-card">
+    <header class="auth-card__head">
+      <span class="auth-card__logo" aria-hidden="true">B</span>
+      <h1 class="auth-card__title">Create your account</h1>
+      <p class="auth-card__subtitle">Start managing invoices with BillFlow</p>
+    </header>
+
+    <form class="auth-form" novalidate>
+      <div class="field">
+        <label class="field__label" for="register-name">Full name</label>
+        <input
+          class="field__input"
+          id="register-name"
+          name="name"
+          type="text"
+          autocomplete="name"
+          placeholder="Jane Doe"
+          required />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="register-email">Email</label>
+        <input
+          class="field__input"
+          id="register-email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          placeholder="you@company.com"
+          required />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="register-password">Password</label>
+        <input
+          class="field__input"
+          id="register-password"
+          name="password"
+          type="password"
+          autocomplete="new-password"
+          placeholder="At least 8 characters"
+          required />
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--block">
+        Create account
+      </button>
+    </form>
+
+    <p class="auth-card__foot">
+      Already have an account?
+      <a routerLink="/auth/login">Sign in</a>
+    </p>
+  </section>
+</div>

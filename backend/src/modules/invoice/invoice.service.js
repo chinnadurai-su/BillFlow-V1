@@ -1,4 +1,5 @@
 // invoice.service.js — Business logic for invoices.
+const Invoice = require('./invoice.model');
 //
 // TODO: implement business logic for each operation.
 //
@@ -13,4 +14,31 @@
 //   - for recurring invoices, schedule the recurringInvoice job (Spec 7.4).
 
 // TODO: implement and export the service functions used by invoice.controller.js.
-module.exports = {};
+exports.listInvoices = async (filter, options) => {
+  // Implementation for listing invoices
+  return await Invoice.find(filter).sort(options.sort).limit(options.limit).skip(options.skip);
+};
+
+exports.getInvoice = async (id) => {
+  return await Invoice.findById(id);
+};
+
+exports.createInvoice = async (invoiceData) => {
+  return await Invoice.create(invoiceData);
+};
+
+exports.updateInvoice = async (id, updateData) => {
+  return await Invoice.findByIdAndUpdate(id, updateData, { new: true });
+};
+
+exports.cancelInvoice = async (id) => {
+  return await Invoice.findByIdAndUpdate(id, { status: 'cancelled' }, { new: true });
+};
+
+exports.downloadPdf = async (id) => {
+  // Implementation for downloading PDF
+};
+
+exports.sendInvoice = async (id) => {
+  // Implementation for sending invoice
+};

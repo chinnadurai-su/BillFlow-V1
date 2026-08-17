@@ -1,1 +1,73 @@
-<!-- TODO: build the record-payment form here -->
+<!-- payment-form.component.html — record a payment (Spec §5.4).
+
+     Bindings the .ts will provide (data logic stays TODO):
+       - invoices()  : options for the invoice selector
+     Plain inputs (no form binding yet). Submit -> POST /api/payments
+     with an Idempotency-Key header (Spec §7.1); status is set server-side.
+     Cancel uses routerLink (needs RouterLink import). -->
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1 class="page__title">Record Payment</h1>
+      <p class="page__subtitle">Log a payment received against an invoice</p>
+    </div>
+  </header>
+
+  <form class="form-card" novalidate>
+    <div class="form-grid">
+      <div class="field field--full">
+        <label class="field__label" for="pay-invoice">
+          Invoice <span class="req" aria-hidden="true">*</span>
+        </label>
+        <select class="field__input" id="pay-invoice" name="invoiceId" required>
+          <option value="" disabled selected>Select an invoice…</option>
+          @for (invoice of invoices(); track invoice._id) {
+            <option [value]="invoice._id">
+              {{ invoice.invoiceNumber }} — {{ invoice.customerName }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="pay-amount">
+          Amount <span class="req" aria-hidden="true">*</span>
+        </label>
+        <input
+          class="field__input"
+          id="pay-amount"
+          name="amount"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+          required />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="pay-method">Method</label>
+        <select class="field__input" id="pay-method" name="method">
+          <option value="card">Card</option>
+          <option value="bank_transfer">Bank transfer</option>
+          <option value="cash">Cash</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="field field--full">
+        <label class="field__label" for="pay-ref">Transaction reference</label>
+        <input
+          class="field__input"
+          id="pay-ref"
+          name="transactionRef"
+          type="text"
+          placeholder="Gateway or bank reference (optional)" />
+      </div>
+    </div>
+
+    <footer class="form-actions">
+      <a class="btn btn--ghost" routerLink="/payments">Cancel</a>
+      <button type="submit" class="btn btn--primary">Record payment</button>
+    </footer>
+  </form>
+</section>

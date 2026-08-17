@@ -1,1 +1,40 @@
-<!-- TODO: build the dashboard summary cards (revenue/outstanding/overdue) here -->
+<!-- dashboard.component.html — KPI summary cards + revenue trend chart.
+
+     Bindings the .ts will provide (data logic stays TODO):
+       - summary()  : { totalRevenue, outstanding, overdueCount }
+     Embeds <app-dashboard-chart>, which requires importing
+     DashboardChartComponent in dashboard.component.ts. -->
+<section class="page">
+  <header class="page__header">
+    <h1 class="page__title">Dashboard</h1>
+    <p class="page__subtitle">Your billing at a glance</p>
+  </header>
+
+  <div class="kpi-grid">
+    <article class="kpi kpi--revenue">
+      <span class="kpi__icon" aria-hidden="true">$</span>
+      <div class="kpi__body">
+        <p class="kpi__label">Total Revenue</p>
+        <p class="kpi__value">${{ summary().totalRevenue }}</p>
+      </div>
+    </article>
+
+    <article class="kpi kpi--outstanding">
+      <span class="kpi__icon" aria-hidden="true">⏳</span>
+      <div class="kpi__body">
+        <p class="kpi__label">Outstanding</p>
+        <p class="kpi__value">${{ summary().outstanding }}</p>
+      </div>
+    </article>
+
+    <article class="kpi kpi--overdue">
+      <span class="kpi__icon" aria-hidden="true">!</span>
+      <div class="kpi__body">
+        <p class="kpi__label">Overdue Invoices</p>
+        <p class="kpi__value">{{ summary().overdueCount }}</p>
+      </div>
+    </article>
+  </div>
+
+  <app-dashboard-chart></app-dashboard-chart>
+</section>

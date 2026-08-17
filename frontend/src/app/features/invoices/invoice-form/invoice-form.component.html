@@ -1,1 +1,136 @@
-<!-- TODO: build the invoice create/edit form (line items, totals) here -->
+<!-- invoice-form.component.html — create/edit invoice (Spec §5.3).
+
+     Bindings the .ts will provide (data + computed totals stay TODO):
+       - customers()            : options for the customer selector
+       - items()                : repeatable line items
+         (description, quantity, unitPrice, total)
+       - addItem(), removeItem($index)
+       - subtotal(), totalAmount() : computed via Signals (Spec §7.5)
+     Plain inputs (no form binding yet). Cancel uses routerLink. -->
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1 class="page__title">New Invoice</h1>
+      <p class="page__subtitle">Add line items and BillFlow totals them for you</p>
+    </div>
+  </header>
+
+  <form class="form-card" novalidate>
+    <!-- Invoice details -->
+    <fieldset class="form-section">
+      <legend class="form-section__title">Invoice details</legend>
+
+      <div class="form-grid">
+        <div class="field field--full">
+          <label class="field__label" for="inv-customer">
+            Customer <span class="req" aria-hidden="true">*</span>
+          </label>
+          <select class="field__input" id="inv-customer" name="customerId" required>
+            <option value="" disabled selected>Select a customer…</option>
+            @for (customer of customers(); track customer._id) {
+              <option [value]="customer._id">{{ customer.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="inv-due">Due date</label>
+          <input class="field__input" id="inv-due" name="dueDate" type="date" />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="inv-cycle">Recurring cycle</label>
+          <select class="field__input" id="inv-cycle" name="recurringCycle">
+            <option value="">One-off (not recurring)</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Line items -->
+    <fieldset class="form-section">
+      <legend class="form-section__title">Line items</legend>
+
+      <div class="items">
+        <div class="items__head" aria-hidden="true">
+          <span>Description</span>
+          <span class="num">Qty</span>
+          <span class="num">Unit price</span>
+          <span class="num">Total</span>
+          <span></span>
+        </div>
+
+        @for (item of items(); track $index) {
+          <div class="items__row">
+            <input
+              class="field__input"
+              type="text"
+              name="description"
+              placeholder="Service or product description"
+              [value]="item.description" />
+            <input
+              class="field__input num"
+              type="number"
+              name="quantity"
+              min="1"
+              placeholder="1"
+              [value]="item.quantity" />
+            <input
+              class="field__input num"
+              type="number"
+              name="unitPrice"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              [value]="item.unitPrice" />
+            <span class="items__total num">${{ item.total }}</span>
+            <button
+              type="button"
+              class="icon-btn"
+              aria-label="Remove line item"
+              (click)="removeItem($index)">
+              ✕
+            </button>
+          </div>
+        } @empty {
+          <p class="items__empty">No line items yet — add your first one below.</p>
+        }
+      </div>
+
+      <button type="button" class="btn btn--ghost btn--sm add-item" (click)="addItem()">
+        + Add line item
+      </button>
+    </fieldset>
+
+    <!-- Totals -->
+    <div class="summary">
+      <div class="summary__row">
+        <span>Subtotal</span>
+        <span class="num">${{ subtotal() }}</span>
+      </div>
+      <div class="summary__row">
+        <label class="summary__label" for="inv-tax">Tax</label>
+        <input
+          class="field__input summary__tax num"
+          id="inv-tax"
+          name="tax"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0.00" />
+      </div>
+      <div class="summary__row summary__row--total">
+        <span>Total</span>
+        <span class="num">${{ totalAmount() }}</span>
+      </div>
+    </div>
+
+    <footer class="form-actions">
+      <a class="btn btn--ghost" routerLink="/invoices">Cancel</a>
+      <button type="submit" class="btn btn--primary">Save invoice</button>
+    </footer>
+  </form>
+</section>

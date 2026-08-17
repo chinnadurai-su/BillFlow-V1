@@ -1,1 +1,184 @@
-/* TODO: styles for the app root shell */
+/* app.component.css — app shell layout (sidebar + main content).
+   Responsive: fixed left sidebar on desktop; collapses to a horizontal
+   top bar on narrow screens (pure CSS, no JS toggle needed). */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---------------- Sidebar ---------------- */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--color-primary-dark);
+  color: rgba(255, 255, 255, 0.85);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar__logo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  background: var(--color-on-primary);
+  color: var(--color-primary-dark);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-h4);
+}
+
+.sidebar__brand-name {
+  font-size: var(--text-h3);
+  font-weight: var(--fw-bold);
+  color: var(--color-on-primary);
+  letter-spacing: 0.01em;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-3);
+  flex: 1;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
+  border-radius: var(--radius);
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: var(--fw-medium);
+  transition: background var(--transition), color var(--transition);
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-on-primary);
+}
+
+.nav-link--active {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-on-primary);
+}
+
+.nav-link__icon {
+  width: 20px;
+  text-align: center;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.sidebar__footer {
+  padding: var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sidebar__avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--color-on-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-sm);
+}
+
+.sidebar__user-name {
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------------- Main ---------------- */
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+/* ---------------- Responsive: collapse to top bar ---------------- */
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    overflow-x: auto;
+    box-shadow: var(--shadow-md);
+  }
+
+  .sidebar__brand {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: none;
+    flex-shrink: 0;
+  }
+
+  .sidebar__nav {
+    flex-direction: row;
+    padding: var(--space-2);
+    flex: 1;
+    overflow-x: auto;
+  }
+
+  .nav-link {
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .nav-link__label {
+    display: none;
+  }
+
+  .sidebar__footer {
+    border-top: none;
+    padding: var(--space-2) var(--space-4);
+    flex-shrink: 0;
+  }
+
+  .sidebar__user-name {
+    display: none;
+  }
+
+  .app-content {
+    padding: var(--space-4);
+  }
+}
