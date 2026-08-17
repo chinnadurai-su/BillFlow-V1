@@ -1,16 +1,40 @@
-// invoiceReminder.job.js — BullMQ job producer: enqueues PDF generation + reminder/invoice email.
+// invoiceReminder.job.js — BullMQ job producers for invoice email delivery (Spec 7.4 / 7.6).
 //
-// Purpose (see Spec Section 7.4): after an invoice is created/regenerated, add a job to the
-// "invoiceJobs" queue; the worker then runs PDFKit (generate PDF) + Nodemailer (send email).
+// Two producers, both on the shared "invoiceJobs" queue with the retry/backoff policy from
+// Spec 7.6 (3 attempts, exponential backoff starting at 5s):
+//   - enqueueInvoiceEmail(invoiceId)    → 'generatePDF' job: worker renders the PDF and emails it
+//                                          (used when an invoice is marked "sent", FR-2.7 / FR-4.2)
+//   - enqueueInvoiceReminder(invoiceId) → 'sendReminder' job: worker emails a due/overdue reminder
+//                                          (FR-4.1)
 //
-// TODO: implement the job producer.
-//   const { Queue } = require('bullmq');
-//   const connection = require('../config/redis');
-//   const invoiceQueue = new Queue('invoiceJobs', { connection });
-//   await invoiceQueue.add('generatePDF', { invoiceId }, {
-//     attempts: 3, backoff: { type: 'exponential', delay: 5000 },
-//   });
-// NOTE: the queue name ('invoiceJobs') MUST match workers/invoice.worker.js exactly.
+// These are producers only — they return immediately after adding the job to Redis. The actual
+// PDF/email work happens asynchronously in workers/invoice.worker.js so API responses never block
+// on it (FR-4.3).
 
-// TODO: export an enqueue helper (e.g. enqueueInvoiceReminder(invoiceId)) once implemented.
-module.exports = {};
+const { addInvoiceJob } = require('./invoiceQueue');
+
+// Retry policy per Spec 7.6: retry up to 3 times with exponential backoff (5s, 10s, 20s).
+const RETRY_OPTS = {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 5000 },
+  removeOnComplete: true,
+  removeOnFail: false, // keep failed jobs for inspection
+};
+
+/**
+ * Enqueue PDF generation + invoice email for a newly sent invoice.
+ * @param {string} invoiceId
+ */
+async function enqueueInvoiceEmail(invoiceId) {
+  return addInvoiceJob('generatePDF', { invoiceId: String(invoiceId) }, RETRY_OPTS);
+}
+
+/**
+ * Enqueue a payment reminder email for an invoice.
+ * @param {string} invoiceId
+ */
+async function enqueueInvoiceReminder(invoiceId) {
+  return addInvoiceJob('sendReminder', { invoiceId: String(invoiceId) }, RETRY_OPTS);
+}
+
+module.exports = { enqueueInvoiceEmail, enqueueInvoiceReminder, RETRY_OPTS };

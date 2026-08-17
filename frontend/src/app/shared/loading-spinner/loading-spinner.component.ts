@@ -1,5 +1,7 @@
-// loading-spinner.component.ts — Reusable loading indicator.
-import { Component } from '@angular/core';
+// loading-spinner.component.ts — reusable loading indicator.
+//
+// Purely presentational: shows a CSS spinner with an optional caption.
+import { Component, input } from '@angular/core';
 
 @Component({
   selector: 'app-loading-spinner',
@@ -8,7 +10,6 @@ import { Component } from '@angular/core';
   styleUrl: './loading-spinner.component.css',
 })
 export class LoadingSpinnerComponent {
-  // TODO:
-  //  - Reusable spinner shown while async work is in flight.
-  //  - Optionally accept an input to toggle visibility / size / label.
+  /** Optional caption shown under the spinner. */
+  readonly message = input('Loading…');
 }

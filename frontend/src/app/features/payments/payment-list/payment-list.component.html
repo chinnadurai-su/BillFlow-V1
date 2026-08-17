@@ -1,11 +1,4 @@
-<!-- payment-list.component.html — recorded payments table.
-
-     Bindings the .ts will provide (data logic stays TODO):
-       - payments()  : list (invoiceNumber, customerName, amount, method,
-                        status, createdAt)
-     Payment status badge maps to shared status tokens
-     (pending / completed / failed).
-     "Record Payment" uses routerLink (needs RouterLink import). -->
+<!-- payment-list.component.html — recorded payments table. -->
 <section class="page">
   <header class="page__header">
     <div>
@@ -14,6 +7,10 @@
     </div>
     <a class="btn btn--primary" routerLink="/payments/new">+ Record Payment</a>
   </header>
+
+  @if (error()) {
+    <p class="error-banner" role="alert">{{ error() }}</p>
+  }
 
   <div class="card">
     <div class="table-scroll">
@@ -29,26 +26,50 @@
           </tr>
         </thead>
         <tbody>
-          @for (payment of payments(); track payment._id) {
+          @if (loading()) {
             <tr>
-              <td class="cell-strong">{{ payment.invoiceNumber }}</td>
-              <td>{{ payment.customerName }}</td>
-              <td class="capitalize">{{ payment.method }}</td>
-              <td>
-                <span class="badge" [class]="'badge badge--' + payment.status">
-                  {{ payment.status }}
-                </span>
-              </td>
-              <td>{{ payment.createdAt }}</td>
-              <td class="num">${{ payment.amount }}</td>
+              <td colspan="6" class="empty-row">Loading payments…</td>
             </tr>
-          } @empty {
-            <tr>
-              <td colspan="6" class="empty-row">No payments recorded yet.</td>
-            </tr>
+          } @else {
+            @for (payment of payments(); track payment._id) {
+              <tr>
+                <td class="cell-strong">{{ payment.invoiceNumber }}</td>
+                <td>{{ payment.customerName }}</td>
+                <td class="capitalize">{{ payment.method }}</td>
+                <td>
+                  <span [class]="badgeClass(payment.status)">{{ payment.status }}</span>
+                </td>
+                <td>{{ payment.createdAt }}</td>
+                <td class="num">${{ money(payment.amount) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="empty-row">No payments recorded yet.</td>
+              </tr>
+            }
           }
         </tbody>
       </table>
     </div>
+
+    <footer class="pagination">
+      <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+      <div class="pagination__controls">
+        <button
+          type="button"
+          class="btn btn--sm btn--ghost"
+          [disabled]="!hasPrevPage() || loading()"
+          (click)="prevPage()">
+          Previous
+        </button>
+        <button
+          type="button"
+          class="btn btn--sm btn--ghost"
+          [disabled]="!hasNextPage() || loading()"
+          (click)="nextPage()">
+          Next
+        </button>
+      </div>
+    </footer>
   </div>
 </section>

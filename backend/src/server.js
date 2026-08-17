@@ -11,6 +11,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../environm
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
@@ -20,6 +21,7 @@ const authRoutes = require('./modules/auth/auth.routes');
 const customerRoutes = require('./modules/customer/customer.routes');
 const invoiceRoutes = require('./modules/invoice/invoice.routes');
 const paymentRoutes = require('./modules/payment/payment.routes');
+const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
 
 const app = express();
 
@@ -29,6 +31,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+// cookie-parser populates req.cookies so the auth refresh/logout flow can read the
+// httpOnly refreshToken cookie (Spec Section 8). Without this, req.cookies is undefined.
+app.use(cookieParser());
 app.use(morgan('dev'));
 
 // --- Health check (trivial infra — fully real) ---
@@ -39,6 +44,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // --- Centralized error handler (must be mounted last, Spec Section 8) ---
 app.use(errorHandler);
@@ -58,6 +64,16 @@ async function start() {
   } catch (err) {
     console.error('[server] MongoDB connection failed:', err.message);
     // Don't exit — the server stays up; DB-backed endpoints will error until it connects.
+  }
+
+  // Register the repeatable daily overdue-check job (BR-4 / Spec §9). Best-effort: if Redis is
+  // unavailable, log and continue — the API must not fail to boot just because the queue is down.
+  try {
+    const { registerOverdueCheck } = require('./jobs/overdueCheck.job');
+    await registerOverdueCheck();
+    console.log('[server] overdue-check job registered');
+  } catch (err) {
+    console.error('[server] failed to register overdue-check job:', err.message);
   }
 }
 

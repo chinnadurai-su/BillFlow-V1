@@ -16,9 +16,31 @@ describe('ConfirmDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('creates and renders the message + labels', () => {
+    fixture.componentRef.setInput('message', 'Archive Acme?');
+    fixture.componentRef.setInput('confirmLabel', 'Archive');
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Archive Acme?');
+    expect(text).toContain('Archive');
   });
 
-  // TODO: add tests for confirm/cancel output emissions and title/message inputs
+  it('emits confirm when the confirm button is clicked', () => {
+    let confirmed = false;
+    component.confirm.subscribe(() => (confirmed = true));
+
+    fixture.nativeElement.querySelector('.btn--danger').click();
+
+    expect(confirmed).toBeTrue();
+  });
+
+  it('emits cancel when the cancel button is clicked', () => {
+    let cancelled = false;
+    component.cancel.subscribe(() => (cancelled = true));
+
+    fixture.nativeElement.querySelector('.btn--ghost').click();
+
+    expect(cancelled).toBeTrue();
+  });
 });

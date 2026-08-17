@@ -20,4 +20,8 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
+// Indexes for frequent queries: payments for an invoice, and payments for a customer.
+paymentSchema.index({ invoiceId: 1 });
+paymentSchema.index({ customerId: 1 });
+
 module.exports = mongoose.model('Payment', paymentSchema);

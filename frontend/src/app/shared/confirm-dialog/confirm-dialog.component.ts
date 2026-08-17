@@ -1,5 +1,9 @@
-// confirm-dialog.component.ts — Reusable confirm/cancel dialog.
-import { Component } from '@angular/core';
+// confirm-dialog.component.ts — reusable confirm/cancel modal for destructive actions.
+//
+// Used instead of the browser's native confirm() for archiving a customer, cancelling an
+// invoice, etc. Presentational: the parent controls visibility (renders it with @if) and
+// reacts to the confirm/cancel outputs.
+import { Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-confirm-dialog',
@@ -8,7 +12,12 @@ import { Component } from '@angular/core';
   styleUrl: './confirm-dialog.component.css',
 })
 export class ConfirmDialogComponent {
-  // TODO:
-  //  - Reusable confirm/cancel dialog (e.g. for delete/cancel actions).
-  //  - Accept inputs for title/message; emit confirm/cancel outputs.
+  readonly title = input('Please confirm');
+  readonly message = input('Are you sure?');
+  readonly confirmLabel = input('Confirm');
+  readonly cancelLabel = input('Cancel');
+
+  /** Emitted when the user accepts / dismisses the action. */
+  readonly confirm = output<void>();
+  readonly cancel = output<void>();
 }

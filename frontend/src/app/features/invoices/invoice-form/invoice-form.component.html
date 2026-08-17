@@ -1,21 +1,22 @@
-<!-- invoice-form.component.html — create/edit invoice (Spec §5.3).
-
-     Bindings the .ts will provide (data + computed totals stay TODO):
-       - customers()            : options for the customer selector
-       - items()                : repeatable line items
-         (description, quantity, unitPrice, total)
-       - addItem(), removeItem($index)
-       - subtotal(), totalAmount() : computed via Signals (Spec §7.5)
-     Plain inputs (no form binding yet). Cancel uses routerLink. -->
+<!-- invoice-form.component.html — create/edit invoice (Spec §5.3). Totals are computed
+     Signals for live feedback; the backend recomputes and remains source of truth. -->
 <section class="page">
   <header class="page__header">
     <div>
-      <h1 class="page__title">New Invoice</h1>
+      <h1 class="page__title">{{ isEdit ? 'Edit invoice' : 'New invoice' }}</h1>
       <p class="page__subtitle">Add line items and BillFlow totals them for you</p>
     </div>
   </header>
 
-  <form class="form-card" novalidate>
+  @if (error()) {
+    <p class="error-banner" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="loading-note">Loading…</p>
+  }
+
+  <form class="form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <!-- Invoice details -->
     <fieldset class="form-section">
       <legend class="form-section__title">Invoice details</legend>
@@ -25,27 +26,44 @@
           <label class="field__label" for="inv-customer">
             Customer <span class="req" aria-hidden="true">*</span>
           </label>
-          <select class="field__input" id="inv-customer" name="customerId" required>
-            <option value="" disabled selected>Select a customer…</option>
+          <select class="field__input" id="inv-customer" formControlName="customerId">
+            <option value="" disabled>Select a customer…</option>
             @for (customer of customers(); track customer._id) {
               <option [value]="customer._id">{{ customer.name }}</option>
             }
           </select>
+          @if (form.controls.customerId.touched && form.controls.customerId.hasError('required')) {
+            <p class="field__error">Please choose a customer.</p>
+          }
         </div>
 
         <div class="field">
           <label class="field__label" for="inv-due">Due date</label>
-          <input class="field__input" id="inv-due" name="dueDate" type="date" />
+          <input class="field__input" id="inv-due" type="date" formControlName="dueDate" />
         </div>
 
         <div class="field">
-          <label class="field__label" for="inv-cycle">Recurring cycle</label>
-          <select class="field__input" id="inv-cycle" name="recurringCycle">
-            <option value="">One-off (not recurring)</option>
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="yearly">Yearly</option>
-          </select>
+          <label class="checkbox">
+            <input type="checkbox" formControlName="isRecurring" />
+            <span>Recurring invoice</span>
+          </label>
+
+          @if (isRecurring()) {
+            <label class="field__label" for="inv-cycle">
+              Billing cycle <span class="req" aria-hidden="true">*</span>
+            </label>
+            <select class="field__input" id="inv-cycle" formControlName="recurringCycle">
+              <option value="" disabled>Select a cycle…</option>
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+            @if (
+              form.controls.recurringCycle.touched && form.controls.recurringCycle.hasError('required')
+            ) {
+              <p class="field__error">Choose a billing cycle.</p>
+            }
+          }
         </div>
       </div>
     </fieldset>
@@ -54,7 +72,7 @@
     <fieldset class="form-section">
       <legend class="form-section__title">Line items</legend>
 
-      <div class="items">
+      <div class="items" formArrayName="items">
         <div class="items__head" aria-hidden="true">
           <span>Description</span>
           <span class="num">Qty</span>
@@ -63,34 +81,26 @@
           <span></span>
         </div>
 
-        @for (item of items(); track $index) {
-          <div class="items__row">
+        @for (group of items.controls; track $index) {
+          <div class="items__row" [formGroupName]="$index">
             <input
               class="field__input"
               type="text"
-              name="description"
               placeholder="Service or product description"
-              [value]="item.description" />
+              formControlName="description" />
+            <input class="field__input num" type="number" min="1" formControlName="quantity" />
             <input
               class="field__input num"
               type="number"
-              name="quantity"
-              min="1"
-              placeholder="1"
-              [value]="item.quantity" />
-            <input
-              class="field__input num"
-              type="number"
-              name="unitPrice"
               min="0"
               step="0.01"
-              placeholder="0.00"
-              [value]="item.unitPrice" />
-            <span class="items__total num">${{ item.total }}</span>
+              formControlName="unitPrice" />
+            <span class="items__total num">${{ money(lineTotal($index)) }}</span>
             <button
               type="button"
               class="icon-btn"
               aria-label="Remove line item"
+              [disabled]="items.length === 1"
               (click)="removeItem($index)">
               ✕
             </button>
@@ -109,28 +119,33 @@
     <div class="summary">
       <div class="summary__row">
         <span>Subtotal</span>
-        <span class="num">${{ subtotal() }}</span>
+        <span class="num">${{ money(subtotal()) }}</span>
       </div>
       <div class="summary__row">
-        <label class="summary__label" for="inv-tax">Tax</label>
+        <label class="summary__label" for="inv-tax-rate">Tax rate (%)</label>
         <input
           class="field__input summary__tax num"
-          id="inv-tax"
-          name="tax"
+          id="inv-tax-rate"
           type="number"
           min="0"
           step="0.01"
-          placeholder="0.00" />
+          formControlName="taxRate" />
+      </div>
+      <div class="summary__row">
+        <span>Tax</span>
+        <span class="num">${{ money(taxAmount()) }}</span>
       </div>
       <div class="summary__row summary__row--total">
         <span>Total</span>
-        <span class="num">${{ totalAmount() }}</span>
+        <span class="num">${{ money(totalAmount()) }}</span>
       </div>
     </div>
 
     <footer class="form-actions">
       <a class="btn btn--ghost" routerLink="/invoices">Cancel</a>
-      <button type="submit" class="btn btn--primary">Save invoice</button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : isEdit ? 'Save changes' : 'Save invoice' }}
+      </button>
     </footer>
   </form>
 </section>

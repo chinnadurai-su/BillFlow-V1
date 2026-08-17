@@ -1,60 +1,64 @@
-<!-- app.component.html — root shell: fixed sidebar nav + main content area.
-
-     Bindings the .ts will eventually provide (see TODO in app.component.ts):
-       - routerLink / routerLinkActive  → requires importing RouterLink,
-         RouterLinkActive from '@angular/router' in the component imports.
-     Business logic (auth state, active user, mobile toggle) stays TODO. -->
-<div class="app-shell">
-  <!-- Sidebar navigation -->
-  <aside class="sidebar">
-    <div class="sidebar__brand">
-      <span class="sidebar__logo" aria-hidden="true">B</span>
-      <span class="sidebar__brand-name">BillFlow</span>
-    </div>
-
-    <nav class="sidebar__nav" aria-label="Primary">
-      <a
-        class="nav-link"
-        routerLink="/dashboard"
-        routerLinkActive="nav-link--active">
-        <span class="nav-link__icon" aria-hidden="true">▤</span>
-        <span class="nav-link__label">Dashboard</span>
-      </a>
-      <a
-        class="nav-link"
-        routerLink="/customers"
-        routerLinkActive="nav-link--active">
-        <span class="nav-link__icon" aria-hidden="true">◍</span>
-        <span class="nav-link__label">Customers</span>
-      </a>
-      <a
-        class="nav-link"
-        routerLink="/invoices"
-        routerLinkActive="nav-link--active">
-        <span class="nav-link__icon" aria-hidden="true">▦</span>
-        <span class="nav-link__label">Invoices</span>
-      </a>
-      <a
-        class="nav-link"
-        routerLink="/payments"
-        routerLinkActive="nav-link--active">
-        <span class="nav-link__icon" aria-hidden="true">₴</span>
-        <span class="nav-link__label">Payments</span>
-      </a>
-    </nav>
-
-    <div class="sidebar__footer">
-      <div class="sidebar__user">
-        <span class="sidebar__avatar" aria-hidden="true">U</span>
-        <span class="sidebar__user-name">Account</span>
+<!-- app.component.html — root shell.
+     When authenticated: fixed sidebar nav + main content area.
+     When not: render the routed page on its own (login/register auth cards). -->
+@if (isAuthenticated()) {
+  <div class="app-shell">
+    <!-- Sidebar navigation -->
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <span class="sidebar__logo" aria-hidden="true">B</span>
+        <span class="sidebar__brand-name">BillFlow</span>
       </div>
-    </div>
-  </aside>
 
-  <!-- Main content -->
-  <div class="app-main">
-    <main class="app-content">
-      <router-outlet></router-outlet>
-    </main>
+      <nav class="sidebar__nav" aria-label="Primary">
+        <a
+          class="nav-link"
+          routerLink="/dashboard"
+          routerLinkActive="nav-link--active">
+          <span class="nav-link__icon" aria-hidden="true">▤</span>
+          <span class="nav-link__label">Dashboard</span>
+        </a>
+        <a
+          class="nav-link"
+          routerLink="/customers"
+          routerLinkActive="nav-link--active">
+          <span class="nav-link__icon" aria-hidden="true">◍</span>
+          <span class="nav-link__label">Customers</span>
+        </a>
+        <a
+          class="nav-link"
+          routerLink="/invoices"
+          routerLinkActive="nav-link--active">
+          <span class="nav-link__icon" aria-hidden="true">▦</span>
+          <span class="nav-link__label">Invoices</span>
+        </a>
+        <a
+          class="nav-link"
+          routerLink="/payments"
+          routerLinkActive="nav-link--active">
+          <span class="nav-link__icon" aria-hidden="true">₴</span>
+          <span class="nav-link__label">Payments</span>
+        </a>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__user">
+          <span class="sidebar__avatar" aria-hidden="true">
+            {{ (currentUser()?.name || currentUser()?.email || 'U').charAt(0).toUpperCase() }}
+          </span>
+          <span class="sidebar__user-name">{{ currentUser()?.name || currentUser()?.email }}</span>
+        </div>
+        <button type="button" class="sidebar__logout" (click)="logout()">Sign out</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="app-main">
+      <main class="app-content">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   </div>
-</div>
+} @else {
+  <router-outlet></router-outlet>
+}
