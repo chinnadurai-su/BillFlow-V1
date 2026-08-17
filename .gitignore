@@ -145,3 +145,8 @@ vite.config.ts.timestamp-*
 # Claude Code local artifacts (not part of the project source)
 .claude/.bash-snapshots/
 .claude/ai-edit-log.json
+
+# AI-METRICS
+.claude/ai-edit-log.json
+.claude/ai-commit-log.json
+.claude/.bash-snapshots/
