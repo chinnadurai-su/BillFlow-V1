@@ -1,6 +1,4 @@
-<!-- login.component.html — centered auth card (email + password).
-     Plain semantic inputs only; form binding + submit stay TODO in the .ts.
-     "Create one" uses routerLink (requires RouterLink import in the .ts). -->
+<!-- login.component.html — centered auth card wired to a reactive form. -->
 <div class="auth-page">
   <section class="auth-card">
     <header class="auth-card__head">
@@ -9,17 +7,29 @@
       <p class="auth-card__subtitle">Sign in to your BillFlow account</p>
     </header>
 
-    <form class="auth-form" novalidate>
+    @if (errorMessage()) {
+      <p class="auth-alert" role="alert">{{ errorMessage() }}</p>
+    }
+
+    <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <div class="field">
         <label class="field__label" for="login-email">Email</label>
         <input
           class="field__input"
           id="login-email"
-          name="email"
           type="email"
           autocomplete="email"
           placeholder="you@company.com"
-          required />
+          formControlName="email" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <p class="field__error">
+            @if (form.controls.email.hasError('required')) {
+              Email is required.
+            } @else {
+              Enter a valid email address.
+            }
+          </p>
+        }
       </div>
 
       <div class="field">
@@ -27,15 +37,17 @@
         <input
           class="field__input"
           id="login-password"
-          name="password"
           type="password"
           autocomplete="current-password"
           placeholder="••••••••"
-          required />
+          formControlName="password" />
+        @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+          <p class="field__error">Password is required.</p>
+        }
       </div>
 
-      <button type="submit" class="btn btn--primary btn--block">
-        Sign in
+      <button type="submit" class="btn btn--primary btn--block" [disabled]="loading()">
+        {{ loading() ? 'Signing in…' : 'Sign in' }}
       </button>
     </form>
 

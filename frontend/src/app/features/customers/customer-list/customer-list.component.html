@@ -1,11 +1,4 @@
-<!-- customer-list.component.html — paginated customer table.
-
-     Bindings the .ts will provide (data logic stays TODO):
-       - customers()    : list of customers  (name, email, phone, balance)
-       - loading()      : boolean loading flag
-       - page(), totalPages(), prevPage(), nextPage()
-       - onDelete(customer)
-     "Add Customer" / row edit use routerLink (needs RouterLink import). -->
+<!-- customer-list.component.html — paginated, searchable customer table. -->
 <section class="page">
   <header class="page__header">
     <div>
@@ -21,11 +14,15 @@
       <input
         class="search__input"
         type="search"
-        name="customerSearch"
         placeholder="Search by name or email…"
-        aria-label="Search customers" />
+        aria-label="Search customers"
+        (input)="onSearchInput($event)" />
     </div>
   </div>
+
+  @if (error()) {
+    <p class="error-banner" role="alert">{{ error() }}</p>
+  }
 
   <div class="card">
     <div class="table-scroll">
@@ -40,49 +37,72 @@
           </tr>
         </thead>
         <tbody>
-          @for (customer of customers(); track customer._id) {
+          @if (loading()) {
             <tr>
-              <td class="cell-strong">{{ customer.name }}</td>
-              <td>{{ customer.email }}</td>
-              <td>{{ customer.phone }}</td>
-              <td class="num">${{ customer.balance }}</td>
-              <td class="actions-col">
-                <div class="row-actions">
-                  <a
-                    class="btn btn--sm btn--ghost"
-                    [routerLink]="['/customers', customer._id, 'edit']">
-                    Edit
-                  </a>
-                  <button
-                    type="button"
-                    class="btn btn--sm btn--ghost-danger"
-                    (click)="onDelete(customer)">
-                    Delete
-                  </button>
-                </div>
-              </td>
+              <td colspan="5" class="empty-row">Loading customers…</td>
             </tr>
-          } @empty {
-            <tr>
-              <td colspan="5" class="empty-row">
-                No customers yet. Add your first customer to get started.
-              </td>
-            </tr>
+          } @else {
+            @for (customer of customers(); track customer._id) {
+              <tr>
+                <td class="cell-strong">{{ customer.name }}</td>
+                <td>{{ customer.email }}</td>
+                <td>{{ customer.phone }}</td>
+                <td class="num">${{ customer.balance }}</td>
+                <td class="actions-col">
+                  <div class="row-actions">
+                    <a
+                      class="btn btn--sm btn--ghost"
+                      [routerLink]="['/customers', customer._id, 'edit']">
+                      Edit
+                    </a>
+                    <button
+                      type="button"
+                      class="btn btn--sm btn--ghost-danger"
+                      (click)="requestDelete(customer)">
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="empty-row">
+                  No customers found. Add your first customer to get started.
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
     </div>
 
     <footer class="pagination">
-      <span class="pagination__info">Page {{ page() }} of {{ totalPages() }}</span>
+      <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
       <div class="pagination__controls">
-        <button type="button" class="btn btn--sm btn--ghost" (click)="prevPage()">
+        <button
+          type="button"
+          class="btn btn--sm btn--ghost"
+          [disabled]="!hasPrevPage() || loading()"
+          (click)="prevPage()">
           Previous
         </button>
-        <button type="button" class="btn btn--sm btn--ghost" (click)="nextPage()">
+        <button
+          type="button"
+          class="btn btn--sm btn--ghost"
+          [disabled]="!hasNextPage() || loading()"
+          (click)="nextPage()">
           Next
         </button>
       </div>
     </footer>
   </div>
 </section>
+
+@if (pendingDelete(); as customer) {
+  <app-confirm-dialog
+    title="Archive customer"
+    [message]="'Archive ' + customer.name + '? They will be removed from active lists.'"
+    confirmLabel="Archive"
+    (confirm)="confirmDelete(customer)"
+    (cancel)="cancelDelete()" />
+}

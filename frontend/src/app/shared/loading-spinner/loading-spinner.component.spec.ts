@@ -16,9 +16,14 @@ describe('LoadingSpinnerComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('creates with a default caption', () => {
     expect(component).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Loading…');
   });
 
-  // TODO: add tests for visibility toggle / inputs
+  it('shows a custom message when provided', () => {
+    fixture.componentRef.setInput('message', 'Fetching invoices…');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Fetching invoices…');
+  });
 });

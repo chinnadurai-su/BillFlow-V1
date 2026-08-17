@@ -1,6 +1,4 @@
-<!-- register.component.html — centered auth card (name + email + password).
-     Plain semantic inputs only; form binding + submit stay TODO in the .ts.
-     "Sign in" uses routerLink (requires RouterLink import in the .ts). -->
+<!-- register.component.html — centered auth card wired to a reactive form. -->
 <div class="auth-page">
   <section class="auth-card">
     <header class="auth-card__head">
@@ -9,17 +7,23 @@
       <p class="auth-card__subtitle">Start managing invoices with BillFlow</p>
     </header>
 
-    <form class="auth-form" novalidate>
+    @if (errorMessage()) {
+      <p class="auth-alert" role="alert">{{ errorMessage() }}</p>
+    }
+
+    <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <div class="field">
         <label class="field__label" for="register-name">Full name</label>
         <input
           class="field__input"
           id="register-name"
-          name="name"
           type="text"
           autocomplete="name"
           placeholder="Jane Doe"
-          required />
+          formControlName="name" />
+        @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+          <p class="field__error">Name is required.</p>
+        }
       </div>
 
       <div class="field">
@@ -27,11 +31,19 @@
         <input
           class="field__input"
           id="register-email"
-          name="email"
           type="email"
           autocomplete="email"
           placeholder="you@company.com"
-          required />
+          formControlName="email" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <p class="field__error">
+            @if (form.controls.email.hasError('required')) {
+              Email is required.
+            } @else {
+              Enter a valid email address.
+            }
+          </p>
+        }
       </div>
 
       <div class="field">
@@ -39,15 +51,23 @@
         <input
           class="field__input"
           id="register-password"
-          name="password"
           type="password"
           autocomplete="new-password"
           placeholder="At least 8 characters"
-          required />
+          formControlName="password" />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <p class="field__error">
+            @if (form.controls.password.hasError('required')) {
+              Password is required.
+            } @else {
+              Password must be at least 8 characters.
+            }
+          </p>
+        }
       </div>
 
-      <button type="submit" class="btn btn--primary btn--block">
-        Create account
+      <button type="submit" class="btn btn--primary btn--block" [disabled]="loading()">
+        {{ loading() ? 'Creating account…' : 'Create account' }}
       </button>
     </form>
 

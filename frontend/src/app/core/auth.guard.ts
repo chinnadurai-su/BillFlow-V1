@@ -1,9 +1,20 @@
-// auth.guard.ts — Route guard that blocks unauthenticated access to protected routes.
-import { CanActivateFn } from '@angular/router';
+// auth.guard.ts — Functional route guard blocking unauthenticated access (Spec §6).
+//
+// Returns true when a valid session exists (token + user in state), otherwise redirects
+// to /auth/login, preserving the attempted URL as `returnUrl` so the user lands back where
+// they were headed after signing in.
+import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
 
-export const authGuard: CanActivateFn = () => {
-  // TODO:
-  //  - Check JWT validity via AuthService / NgRx auth state.
-  //  - Return true when authenticated; otherwise redirect to /auth/login.
-  return true;
+import { AuthService } from '../features/auth/auth.service';
+
+export const authGuard: CanActivateFn = (_route, state) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  if (auth.isAuthenticated()) {
+    return true;
+  }
+
+  return router.createUrlTree(['/auth/login']);
 };

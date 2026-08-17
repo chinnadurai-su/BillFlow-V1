@@ -38,11 +38,21 @@ const invoiceSchema = new mongoose.Schema(
       default: null,
     },
     pdfUrl: { type: String }, // filled in after PDFKit runs
+    // Last time a reminder email was enqueued for this invoice. Used by the upcoming-due sweep
+    // (FR-4.1) to avoid re-reminding the same invoice on every daily run.
+    lastReminderAt: { type: Date },
     // "sparse" so the unique constraint only applies to docs that actually set it.
     // The real idempotency check happens via the IdempotencyKey collection (Spec Section 7.1).
     idempotencyKey: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );
+
+// Indexes for frequent queries (Spec / CLAUDE.md): list by customer, filter by status,
+// and the overdue sweep which scans by status + dueDate.
+invoiceSchema.index({ customerId: 1 });
+invoiceSchema.index({ status: 1 });
+invoiceSchema.index({ dueDate: 1 });
+invoiceSchema.index({ status: 1, dueDate: 1 }); // supports the overdue-check query
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

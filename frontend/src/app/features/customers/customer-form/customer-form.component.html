@@ -1,17 +1,24 @@
-<!-- customer-form.component.html — create/edit customer.
-     Fields match the Customer schema (Spec §5.2). Plain semantic inputs;
-     form binding + save stay TODO in the .ts. balance is server-managed
-     and intentionally not editable here.
-     Cancel uses routerLink (needs RouterLink import). -->
+<!-- customer-form.component.html — create/edit customer (fields match Spec §5.2).
+     balance is server-managed and intentionally not editable here. -->
 <section class="page">
   <header class="page__header">
     <div>
-      <h1 class="page__title">New Customer</h1>
-      <p class="page__subtitle">Add a customer to start billing them</p>
+      <h1 class="page__title">{{ isEdit ? 'Edit customer' : 'New customer' }}</h1>
+      <p class="page__subtitle">
+        {{ isEdit ? 'Update this customer’s details' : 'Add a customer to start billing them' }}
+      </p>
     </div>
   </header>
 
-  <form class="form-card" novalidate>
+  @if (error()) {
+    <p class="error-banner" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="loading-note">Loading customer…</p>
+  }
+
+  <form class="form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <fieldset class="form-section">
       <legend class="form-section__title">Contact details</legend>
 
@@ -23,10 +30,12 @@
           <input
             class="field__input"
             id="cust-name"
-            name="name"
             type="text"
             placeholder="Acme Corp."
-            required />
+            formControlName="name" />
+          @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+            <p class="field__error">Name is required.</p>
+          }
         </div>
 
         <div class="field">
@@ -36,10 +45,18 @@
           <input
             class="field__input"
             id="cust-email"
-            name="email"
             type="email"
             placeholder="billing@acme.com"
-            required />
+            formControlName="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <p class="field__error">
+              @if (form.controls.email.hasError('required')) {
+                Email is required.
+              } @else {
+                Enter a valid email address.
+              }
+            </p>
+          }
         </div>
 
         <div class="field">
@@ -47,14 +64,14 @@
           <input
             class="field__input"
             id="cust-phone"
-            name="phone"
             type="tel"
-            placeholder="+1 555 010 1234" />
+            placeholder="+1 555 010 1234"
+            formControlName="phone" />
         </div>
       </div>
     </fieldset>
 
-    <fieldset class="form-section">
+    <fieldset class="form-section" formGroupName="billingAddress">
       <legend class="form-section__title">Billing address</legend>
 
       <div class="form-grid">
@@ -63,36 +80,38 @@
           <input
             class="field__input"
             id="cust-line1"
-            name="line1"
             type="text"
-            placeholder="123 Market Street" />
+            placeholder="123 Market Street"
+            formControlName="line1" />
         </div>
 
         <div class="field">
           <label class="field__label" for="cust-city">City</label>
-          <input class="field__input" id="cust-city" name="city" type="text" />
+          <input class="field__input" id="cust-city" type="text" formControlName="city" />
         </div>
 
         <div class="field">
           <label class="field__label" for="cust-state">State / Province</label>
-          <input class="field__input" id="cust-state" name="state" type="text" />
+          <input class="field__input" id="cust-state" type="text" formControlName="state" />
         </div>
 
         <div class="field">
           <label class="field__label" for="cust-zip">ZIP / Postal code</label>
-          <input class="field__input" id="cust-zip" name="zip" type="text" />
+          <input class="field__input" id="cust-zip" type="text" formControlName="zip" />
         </div>
 
         <div class="field">
           <label class="field__label" for="cust-country">Country</label>
-          <input class="field__input" id="cust-country" name="country" type="text" />
+          <input class="field__input" id="cust-country" type="text" formControlName="country" />
         </div>
       </div>
     </fieldset>
 
     <footer class="form-actions">
       <a class="btn btn--ghost" routerLink="/customers">Cancel</a>
-      <button type="submit" class="btn btn--primary">Save customer</button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : isEdit ? 'Save changes' : 'Save customer' }}
+      </button>
     </footer>
   </form>
 </section>

@@ -26,6 +26,29 @@
 
 .page__actions { display: flex; gap: var(--space-3); }
 
+.toast {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success);
+  font-size: var(--text-sm);
+}
+
+.error-banner {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+.loading-note {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
 /* Invoice "paper" */
 .invoice {
   background: var(--color-surface);
@@ -222,6 +245,21 @@
   color: var(--color-text-body);
 }
 .btn--ghost:hover { background: var(--color-surface-alt); }
+
+.btn--ghost-danger {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-danger);
+}
+.btn--ghost-danger:hover {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 @media (max-width: 600px) {
   .invoice { padding: var(--space-4); }

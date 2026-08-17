@@ -60,6 +60,35 @@
 
 .req { color: var(--color-danger); }
 
+.field__error {
+  color: var(--color-danger-text);
+  font-size: var(--text-sm);
+}
+
+.error-banner {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+.loading-note {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body);
+  color: var(--color-text-body);
+  cursor: pointer;
+  margin-bottom: var(--space-2);
+}
+
 .field__input {
   width: 100%;
   padding: var(--space-3);
@@ -128,6 +157,10 @@
   background: var(--color-danger-soft);
   color: var(--color-danger);
   border-color: var(--color-danger);
+}
+.icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .add-item { align-self: flex-start; margin-top: var(--space-3); }
@@ -199,6 +232,11 @@
   color: var(--color-text-body);
 }
 .btn--ghost:hover { background: var(--color-surface-alt); }
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 @media (max-width: 680px) {
   .form-grid { grid-template-columns: 1fr; }

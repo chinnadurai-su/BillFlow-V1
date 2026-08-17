@@ -84,6 +84,9 @@
 }
 
 .sidebar__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   padding: var(--space-4);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -92,6 +95,30 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-width: 0;
+}
+
+.sidebar__user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar__logout {
+  align-self: flex-start;
+  padding: var(--space-1) 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.sidebar__logout:hover {
+  color: var(--color-on-primary);
+  text-decoration: underline;
 }
 
 .sidebar__avatar {

@@ -1,6 +1,5 @@
-<!-- loading-spinner.component.html — reusable centered CSS spinner.
-     Visual only. The .ts may later add inputs for size/label/visibility. -->
+<!-- loading-spinner.component.html — reusable centered CSS spinner with an optional caption. -->
 <div class="spinner-wrap" role="status" aria-live="polite">
   <span class="spinner" aria-hidden="true"></span>
-  <span class="spinner__label">Loading…</span>
+  <span class="spinner__label">{{ message() }}</span>
 </div>

@@ -1,13 +1,26 @@
-// app.component.ts — Standalone root component; hosts the router outlet for the SPA shell.
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+// app.component.ts — Standalone root component; hosts the app shell + router outlet.
+//
+// The sidebar shell is shown only when authenticated; auth screens (login/register)
+// render on their own. Nav state and logout are driven by AuthService.
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+
+import { AuthService } from './features/auth/auth.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
 export class AppComponent {
-  // TODO: add the app shell (nav, layout) once feature routes exist.
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  readonly isAuthenticated = this.auth.isAuthenticated;
+  readonly currentUser = this.auth.currentUser;
+
+  logout(): void {
+    this.auth.logout().subscribe(() => void this.router.navigate(['/auth/login']));
+  }
 }

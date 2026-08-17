@@ -1,21 +1,24 @@
-<!-- dashboard.component.html — KPI summary cards + revenue trend chart.
-
-     Bindings the .ts will provide (data logic stays TODO):
-       - summary()  : { totalRevenue, outstanding, overdueCount }
-     Embeds <app-dashboard-chart>, which requires importing
-     DashboardChartComponent in dashboard.component.ts. -->
+<!-- dashboard.component.html — KPI summary cards + revenue trend chart. -->
 <section class="page">
   <header class="page__header">
     <h1 class="page__title">Dashboard</h1>
     <p class="page__subtitle">Your billing at a glance</p>
   </header>
 
+  @if (error()) {
+    <p class="error-banner" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <app-loading-spinner message="Loading dashboard…" />
+  }
+
   <div class="kpi-grid">
     <article class="kpi kpi--revenue">
       <span class="kpi__icon" aria-hidden="true">$</span>
       <div class="kpi__body">
         <p class="kpi__label">Total Revenue</p>
-        <p class="kpi__value">${{ summary().totalRevenue }}</p>
+        <p class="kpi__value">${{ money(summary().totalRevenue) }}</p>
       </div>
     </article>
 
@@ -23,7 +26,7 @@
       <span class="kpi__icon" aria-hidden="true">⏳</span>
       <div class="kpi__body">
         <p class="kpi__label">Outstanding</p>
-        <p class="kpi__value">${{ summary().outstanding }}</p>
+        <p class="kpi__value">${{ money(summary().outstanding) }}</p>
       </div>
     </article>
 
@@ -36,5 +39,5 @@
     </article>
   </div>
 
-  <app-dashboard-chart></app-dashboard-chart>
+  <app-dashboard-chart [data]="revenueTrend()"></app-dashboard-chart>
 </section>

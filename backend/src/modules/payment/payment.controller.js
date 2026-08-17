@@ -1,28 +1,43 @@
-// payment.controller.js — Express request handlers for payments (Spec Section 6 — Payments).
+// payment.controller.js — thin Express handlers for payments (Spec Section 6 — Payments).
 //
-// TODO: implement record + list handlers, delegating to payment.service:
-//   listPayments  GET  /api/payments      — paginated list (default limit 20, Spec 8)
-//   getPayment    GET  /api/payments/:id  — fetch one, 404 if not found
-//   recordPayment POST /api/payments      — requires Idempotency-Key header (Spec 7.1);
-//                                            records payment + updates invoice/customer balance +
-//                                            writes AuditLog inside a transaction (Spec 7.2)
+// Controllers stay thin: delegate to payment.service, shape { success, data }, forward errors.
+// The idempotency middleware runs before recordPayment on the route; the handler forwards the
+// Idempotency-Key header to the service (DB-enforced idempotency backstop, Spec 7.1 / FR-3.4).
 
-// eslint-disable-next-line no-unused-vars
+const paymentService = require('./payment.service');
+
+// GET /api/payments — paginated + filterable list.
 async function listPayments(req, res, next) {
-  // TODO: call payment.service.js (paginated list)
-  return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
+  try {
+    const result = await paymentService.list(req.query);
+    return res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    return next(err);
+  }
 }
 
-// eslint-disable-next-line no-unused-vars
+// GET /api/payments/:id — one payment (404 if missing).
 async function getPayment(req, res, next) {
-  // TODO: call payment.service.js
-  return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
+  try {
+    const payment = await paymentService.getById(req.params.id);
+    return res.status(200).json({ success: true, data: payment });
+  } catch (err) {
+    return next(err);
+  }
 }
 
-// eslint-disable-next-line no-unused-vars
+// POST /api/payments — record a payment (requires Idempotency-Key header, Spec 7.1).
 async function recordPayment(req, res, next) {
-  // TODO: call payment.service.js (idempotency middleware runs before this on the POST route)
-  return res.status(501).json({ success: false, message: 'Not implemented', errorCode: 'NOT_IMPLEMENTED' });
+  try {
+    const idempotencyKey = req.headers['idempotency-key'];
+    const payment = await paymentService.record(
+      { ...req.body, idempotencyKey },
+      req.user && req.user.id
+    );
+    return res.status(201).json({ success: true, data: payment });
+  } catch (err) {
+    return next(err);
+  }
 }
 
 module.exports = { listPayments, getPayment, recordPayment };
