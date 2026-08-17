@@ -4,7 +4,7 @@
   "description": "BillFlow frontend — Angular 21 standalone SPA (see ../docs/BillFlow_Dev_Technical_Spec.md).",
   "scripts": {
     "start": "ng serve",
-    "build": "ng build",
+    "build": "npx ng build",
     "test": "ng test"
   },
   "private": true,
