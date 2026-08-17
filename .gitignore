@@ -150,3 +150,5 @@ vite.config.ts.timestamp-*
 .claude/ai-edit-log.json
 .claude/ai-commit-log.json
 .claude/.bash-snapshots/
+
+/package-lock.json 
