@@ -24,7 +24,10 @@ const paymentRoutes = require('./modules/payment/payment.routes');
 const app = express();
 
 // --- Global middleware ---
-app.use(cors({ origin: process.env.CLIENT_URL || true, credentials: true }));
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:4200',
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 
