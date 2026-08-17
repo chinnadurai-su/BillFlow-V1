@@ -1,1 +1,107 @@
-<!-- TODO: build the single-invoice detail view with a PDF download button here -->
+<!-- invoice-detail.component.html — read-only invoice, styled like a document.
+
+     Bindings the .ts will provide (data logic stays TODO):
+       - invoice()  : single invoice with customer + items
+         (invoiceNumber, status, dueDate, createdAt, items[],
+          subtotal, tax, totalAmount, customer{ name,email,billingAddress })
+       - downloadPdf()  -> GET  /api/invoices/:id/pdf
+       - sendEmail()    -> POST /api/invoices/:id/send
+     Back link uses routerLink (needs RouterLink import). -->
+@let inv = invoice();
+
+<section class="page">
+  <header class="page__header">
+    <a class="back-link" routerLink="/invoices">← Back to invoices</a>
+    <div class="page__actions">
+      <button type="button" class="btn btn--ghost" (click)="sendEmail()">
+        ✉ Send Email
+      </button>
+      <button type="button" class="btn btn--primary" (click)="downloadPdf()">
+        ↓ Download PDF
+      </button>
+    </div>
+  </header>
+
+  <article class="invoice">
+    <!-- Document header -->
+    <div class="invoice__top">
+      <div class="invoice__brand">
+        <span class="invoice__logo" aria-hidden="true">B</span>
+        <span class="invoice__brand-name">BillFlow</span>
+      </div>
+      <div class="invoice__meta">
+        <h1 class="invoice__title">Invoice</h1>
+        <p class="invoice__number">{{ inv.invoiceNumber }}</p>
+        <span class="badge" [class]="'badge badge--' + inv.status">
+          {{ inv.status }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Parties + dates -->
+    <div class="invoice__parties">
+      <div class="party">
+        <h2 class="party__heading">Billed to</h2>
+        <p class="party__name">{{ inv.customer.name }}</p>
+        <p>{{ inv.customer.email }}</p>
+        <p>{{ inv.customer.billingAddress.line1 }}</p>
+        <p>
+          {{ inv.customer.billingAddress.city }},
+          {{ inv.customer.billingAddress.state }}
+          {{ inv.customer.billingAddress.zip }}
+        </p>
+        <p>{{ inv.customer.billingAddress.country }}</p>
+      </div>
+      <dl class="invoice__dates">
+        <div>
+          <dt>Issued</dt>
+          <dd>{{ inv.createdAt }}</dd>
+        </div>
+        <div>
+          <dt>Due date</dt>
+          <dd>{{ inv.dueDate }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Line items -->
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Description</th>
+            <th scope="col" class="num">Qty</th>
+            <th scope="col" class="num">Unit price</th>
+            <th scope="col" class="num">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of inv.items; track $index) {
+            <tr>
+              <td>{{ item.description }}</td>
+              <td class="num">{{ item.quantity }}</td>
+              <td class="num">${{ item.unitPrice }}</td>
+              <td class="num">${{ item.total }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals -->
+    <div class="invoice__totals">
+      <div class="total-row">
+        <span>Subtotal</span>
+        <span class="num">${{ inv.subtotal }}</span>
+      </div>
+      <div class="total-row">
+        <span>Tax</span>
+        <span class="num">${{ inv.tax }}</span>
+      </div>
+      <div class="total-row total-row--grand">
+        <span>Total due</span>
+        <span class="num">${{ inv.totalAmount }}</span>
+      </div>
+    </div>
+  </article>
+</section>

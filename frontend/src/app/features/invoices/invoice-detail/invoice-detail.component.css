@@ -1,1 +1,232 @@
-/* TODO: styles for invoice-detail.component */
+/* invoice-detail.component.css — invoice document layout + status badge.
+   Scoped to this component; values from styles.css tokens. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.back-link {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+}
+.back-link:hover { color: var(--color-primary); }
+
+.page__actions { display: flex; gap: var(--space-3); }
+
+/* Invoice "paper" */
+.invoice {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.invoice__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.invoice__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.invoice__logo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-h3);
+}
+
+.invoice__brand-name {
+  font-size: var(--text-h3);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+
+.invoice__meta { text-align: right; }
+
+.invoice__title {
+  font-size: var(--text-h2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.invoice__number {
+  font-size: var(--text-h4);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+/* Parties + dates */
+.invoice__parties {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+.party { font-size: var(--text-sm); color: var(--color-text-muted); }
+.party p { margin-bottom: 2px; }
+
+.party__heading {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-2);
+}
+
+.party__name {
+  font-size: var(--text-body);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+.invoice__dates {
+  display: flex;
+  gap: var(--space-6);
+  margin: 0;
+}
+.invoice__dates dt {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-1);
+}
+.invoice__dates dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-body);
+}
+
+/* Items table */
+.table-scroll { overflow-x: auto; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body);
+}
+.table th {
+  text-align: left;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  font-weight: var(--fw-semibold);
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 2px solid var(--color-border-strong);
+  white-space: nowrap;
+}
+.table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-body);
+}
+
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Totals */
+.invoice__totals {
+  margin-left: auto;
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--text-body);
+  color: var(--color-text-body);
+}
+
+.total-row--grand {
+  border-top: 2px solid var(--color-border-strong);
+  padding-top: var(--space-3);
+  margin-top: var(--space-1);
+  font-size: var(--text-h4);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+
+/* Status badge — shared status tokens */
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: capitalize;
+  line-height: 1.4;
+}
+.badge--draft     { background: var(--color-neutral-soft); color: var(--color-neutral-text); }
+.badge--sent      { background: var(--color-info-soft);    color: var(--color-info-text); }
+.badge--paid      { background: var(--color-success-soft); color: var(--color-success-text); }
+.badge--overdue   { background: var(--color-warning-soft); color: var(--color-warning-text); }
+.badge--cancelled { background: var(--color-danger-soft);  color: var(--color-danger-text); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-body);
+  font-weight: var(--fw-medium);
+  transition: background var(--transition), border-color var(--transition);
+}
+.btn--primary { background: var(--color-primary); color: var(--color-on-primary); }
+.btn--primary:hover { background: var(--color-primary-hover); }
+.btn--ghost {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-body);
+}
+.btn--ghost:hover { background: var(--color-surface-alt); }
+
+@media (max-width: 600px) {
+  .invoice { padding: var(--space-4); }
+  .invoice__meta { text-align: left; }
+  .invoice__totals { max-width: none; }
+  .page__actions { width: 100%; }
+  .page__actions .btn { flex: 1; justify-content: center; }
+}

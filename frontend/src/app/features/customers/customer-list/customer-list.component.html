@@ -1,1 +1,88 @@
-<!-- TODO: build the paginated customer list (table + filters) here -->
+<!-- customer-list.component.html — paginated customer table.
+
+     Bindings the .ts will provide (data logic stays TODO):
+       - customers()    : list of customers  (name, email, phone, balance)
+       - loading()      : boolean loading flag
+       - page(), totalPages(), prevPage(), nextPage()
+       - onDelete(customer)
+     "Add Customer" / row edit use routerLink (needs RouterLink import). -->
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1 class="page__title">Customers</h1>
+      <p class="page__subtitle">Manage your customer accounts and balances</p>
+    </div>
+    <a class="btn btn--primary" routerLink="/customers/new">+ Add Customer</a>
+  </header>
+
+  <div class="toolbar">
+    <div class="search">
+      <span class="search__icon" aria-hidden="true">⌕</span>
+      <input
+        class="search__input"
+        type="search"
+        name="customerSearch"
+        placeholder="Search by name or email…"
+        aria-label="Search customers" />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Phone</th>
+            <th scope="col" class="num">Balance</th>
+            <th scope="col" class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (customer of customers(); track customer._id) {
+            <tr>
+              <td class="cell-strong">{{ customer.name }}</td>
+              <td>{{ customer.email }}</td>
+              <td>{{ customer.phone }}</td>
+              <td class="num">${{ customer.balance }}</td>
+              <td class="actions-col">
+                <div class="row-actions">
+                  <a
+                    class="btn btn--sm btn--ghost"
+                    [routerLink]="['/customers', customer._id, 'edit']">
+                    Edit
+                  </a>
+                  <button
+                    type="button"
+                    class="btn btn--sm btn--ghost-danger"
+                    (click)="onDelete(customer)">
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="empty-row">
+                No customers yet. Add your first customer to get started.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pagination">
+      <span class="pagination__info">Page {{ page() }} of {{ totalPages() }}</span>
+      <div class="pagination__controls">
+        <button type="button" class="btn btn--sm btn--ghost" (click)="prevPage()">
+          Previous
+        </button>
+        <button type="button" class="btn btn--sm btn--ghost" (click)="nextPage()">
+          Next
+        </button>
+      </div>
+    </footer>
+  </div>
+</section>

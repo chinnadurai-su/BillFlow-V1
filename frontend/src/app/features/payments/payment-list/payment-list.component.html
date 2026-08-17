@@ -1,1 +1,54 @@
-<!-- TODO: build the payments list (table) here -->
+<!-- payment-list.component.html — recorded payments table.
+
+     Bindings the .ts will provide (data logic stays TODO):
+       - payments()  : list (invoiceNumber, customerName, amount, method,
+                        status, createdAt)
+     Payment status badge maps to shared status tokens
+     (pending / completed / failed).
+     "Record Payment" uses routerLink (needs RouterLink import). -->
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1 class="page__title">Payments</h1>
+      <p class="page__subtitle">Track payments recorded against your invoices</p>
+    </div>
+    <a class="btn btn--primary" routerLink="/payments/new">+ Record Payment</a>
+  </header>
+
+  <div class="card">
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Invoice</th>
+            <th scope="col">Customer</th>
+            <th scope="col">Method</th>
+            <th scope="col">Status</th>
+            <th scope="col">Date</th>
+            <th scope="col" class="num">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (payment of payments(); track payment._id) {
+            <tr>
+              <td class="cell-strong">{{ payment.invoiceNumber }}</td>
+              <td>{{ payment.customerName }}</td>
+              <td class="capitalize">{{ payment.method }}</td>
+              <td>
+                <span class="badge" [class]="'badge badge--' + payment.status">
+                  {{ payment.status }}
+                </span>
+              </td>
+              <td>{{ payment.createdAt }}</td>
+              <td class="num">${{ payment.amount }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-row">No payments recorded yet.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

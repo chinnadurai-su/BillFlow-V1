@@ -1,1 +1,13 @@
-<!-- TODO: build the Chart.js revenue-trend canvas here -->
+<!-- dashboard-chart.component.html — container for the Chart.js canvas.
+     The .ts will grab the #revenueChart canvas (ViewChild) and render a
+     Chart.js line chart into it (chart logic stays TODO). -->
+<section class="chart-card">
+  <header class="chart-card__head">
+    <h2 class="chart-card__title">Revenue Trend</h2>
+    <p class="chart-card__subtitle">Last 12 months</p>
+  </header>
+
+  <div class="chart-card__canvas-wrap">
+    <canvas #revenueChart aria-label="Revenue trend chart" role="img"></canvas>
+  </div>
+</section>

@@ -1,1 +1,83 @@
-/* TODO: styles for dashboard.component */
+/* dashboard.component.css — KPI card grid. Scoped; values from tokens. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.page__title { font-size: var(--text-h1); }
+
+.page__subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--space-1);
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.kpi {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+  border-left: 4px solid var(--color-border-strong);
+}
+
+.kpi__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  font-size: var(--text-h3);
+  font-weight: var(--fw-bold);
+}
+
+.kpi__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.kpi__value {
+  font-size: var(--text-h1);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* Accent each KPI with a semantic status colour. */
+.kpi--revenue {
+  border-left-color: var(--color-success);
+}
+.kpi--revenue .kpi__icon {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.kpi--outstanding {
+  border-left-color: var(--color-info);
+}
+.kpi--outstanding .kpi__icon {
+  background: var(--color-info-soft);
+  color: var(--color-info-text);
+}
+
+.kpi--overdue {
+  border-left-color: var(--color-warning);
+}
+.kpi--overdue .kpi__icon {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}

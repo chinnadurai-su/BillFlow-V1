@@ -1,1 +1,25 @@
-<!-- TODO: build the reusable confirm/cancel dialog here -->
+<!-- confirm-dialog.component.html — modal overlay with message + actions.
+
+     Bindings the .ts will eventually provide (kept as TODO in the .ts):
+       - title / message inputs        → {{ title }}, {{ message }}
+       - confirm() / cancel() outputs  → (click) handlers below
+     Static fallback text is shown until those inputs exist. -->
+<div class="dialog-overlay">
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirm-dialog-title">
+    <h3 class="dialog__title" id="confirm-dialog-title">{{ title }}</h3>
+    <p class="dialog__message">{{ message }}</p>
+
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" (click)="cancel()">
+        Cancel
+      </button>
+      <button type="button" class="btn btn--danger" (click)="confirm()">
+        Confirm
+      </button>
+    </div>
+  </div>
+</div>
