@@ -1,556 +1,251 @@
 # BillFlow — Interview Notes & Cheat Sheet
 
-> A personal study guide for talking about BillFlow in interviews.
-> Part 1 is a quick briefing. Part 2 is a full question bank with answers,
-> grouped by round (overview, stack, architecture, deep-dives, DB, scenarios,
-> frontend, security, testing, curveballs).
+> A design-decision-and-trade-off study guide for talking about **BillFlow** in interviews.
+> Grounded in the **actual implementation** — the backend is fully built and the Angular
+> frontend is built out (auth, customers, invoices, payments, dashboard). Answers are
+> deliberately crisp — a few sentences each, with the "why" front and centre.
+> Requirement IDs (`FR-*`, `BR-*`) reference `docs/BillFlow_BRD.md`.
 
 ---
 
-# PART 1 — THE BRIEFING
+## 30-second pitch
 
-## 1. Elevator pitch (30 seconds)
+BillFlow is a SaaS billing/invoicing platform (a lightweight Chargebee). Businesses manage customers, create one-off and recurring invoices, email them as PDFs, record payments, and watch revenue / outstanding / overdue on a dashboard. The engineering focus is **money correctness**: every financial write is **idempotent** (cache + unique-index backstop), **multi-collection writes are transactional** (all-or-nothing), and **every sensitive change is audit-logged inside the same transaction**. Full stack — Angular 21 (standalone + Signals + a thin NgRx auth slice), Node/Express, MongoDB Atlas + Mongoose, BullMQ/Redis workers, SendGrid, PDFKit.
 
-BillFlow is a SaaS billing and invoicing platform — a lightweight Chargebee.
-Businesses manage customers, create one-off and recurring invoices, record
-payments against them, and track revenue on a dashboard. It handles the
-money-critical parts carefully: every financial operation is **idempotent**,
-multi-collection writes run in **database transactions**, and every sensitive
-change is **audit-logged**. It's a full-stack app — Angular frontend, Node/Express
-API, MongoDB — with **background jobs** for recurring invoices and overdue
-reminders.
+## Tech stack at a glance
 
-## 2. Tech stack (with the "why")
-
-| Layer | Choice | Why |
+| Layer | Choice | One-line why |
 |---|---|---|
-| Frontend | Angular 21 — standalone components + Signals, NgRx for shared state only | Signals give fine-grained reactivity for local state; NgRx reserved for genuinely shared state (auth/user) to avoid boilerplate |
-| Backend | Node.js + Express | Lightweight REST API, thin controllers |
-| Database | MongoDB Atlas + Mongoose | Flexible schema for invoices with variable line items; transactions via replica sets |
-| Queue | BullMQ + Redis | Background jobs run outside the request cycle |
-| Email | SendGrid | Transactional email for invoices/reminders |
-| PDF | PDFKit | Generate invoice PDFs in-memory (Buffer, no temp files) |
-| Deploy | Netlify (frontend) + Render (backend) | |
+| Frontend | Angular 21 — standalone + Signals, NgRx for shared state only | Signals for local reactivity; NgRx reserved for genuinely shared auth state |
+| Backend | Node.js + Express | Thin controllers, hand-wired `routes → controller → service` |
+| Database | MongoDB Atlas + Mongoose | Embedded line items; multi-doc ACID transactions on a replica set |
+| Queue | BullMQ + Redis | Jobs run outside the request cycle, survive restarts, retry with backoff |
+| Email | **SendGrid** (`@sendgrid/mail`) | Managed deliverability + a dry-run fallback for dev/test |
+| PDF | PDFKit | In-memory `Buffer`, no Chromium, no temp files (Render FS is ephemeral) |
+| Deploy | Netlify (frontend) + Render (backend) | Free-tier friendly |
 
-## 3. Architecture in one breath
+## The four signature concerns
 
-- **Modular backend**: each domain (`auth`, `customer`, `invoice`, `payment`,
-  `dashboard`, `notification`) is a folder with `routes → controller → service`.
-  Controllers are thin — all business logic lives in `*.service.js`.
-- **Frontend feature-folder structure**: each feature has components, a
-  data-access service over a central `ApiService`, and typed models. No `any`
-  types — full typed model layer end to end.
-- **Background jobs** run as BullMQ workers, not cron inside the web process,
-  so scheduling scales independently of the API.
-
-## 4. The four "signature" concerns
-
-1. **Idempotency (defense in depth)** — client `Idempotency-Key` header + a
-   middleware cache, backed by a **unique DB index** on `idempotencyKey`. On a
-   race, one insert wins and the duplicate (E11000) returns the existing record.
-   Cache stores only 2xx responses so a transient failure can still be retried.
-2. **MongoDB transactions** — recording a payment touches Payment + invoice
-   balance + invoice status + audit log; all wrapped in `withTransaction` so a
-   failure rolls everything back.
-3. **Audit logging** — every sensitive write logs a before/after snapshot inside
-   the same transaction, sanitized of passwords/tokens/card fields.
-4. **Auth & security** — JWT access (15m) + refresh (7d, httpOnly cookie), token
-   rotation + revocation (SHA-256 hash denylist with TTL index), RBAC, bcrypt,
-   no user enumeration, no privilege escalation, rate limiting.
-
-## 5. Extra talking points
-
-- Invoices: server computes totals (never trusts the client); numbers are
-  sequential (`INV-2026-0001`) via an atomic counter; cancel is a soft-delete.
-- Recurring invoices: a daily job generates the next occurrence; retries are
-  deduped by a deterministic idempotency key.
-- Frontend resilience: single-flight refresh, 401 refresh-and-retry interceptor,
-  `switchMap` to cancel stale search requests.
-- Testing: socket-free unit tests (always run) + DB-backed integration tests
-  (env-gated), with explicit idempotency and rollback tests.
+1. **Idempotency (defense in depth)** — `Idempotency-Key` header → middleware cache → **unique DB index** on `idempotencyKey`. The cache caches only 2xx; the index is the real backstop.
+2. **Transactions** — recording a payment writes Payment + invoice status + customer balance + audit log; all wrapped in `withTransaction`, which **fails loudly** on standalone Mongo rather than silently dropping atomicity.
+3. **Audit logging** — before/after snapshots written *inside* the transaction, sanitized of secrets.
+4. **Auth & security** — JWT access (15m) + refresh (7d, httpOnly cookie), rotation + SHA-256 denylist with TTL, RBAC, no user enumeration, no privilege escalation.
 
 ---
 
-# PART 2 — QUESTION BANK WITH ANSWERS
-
-## A. Warm-up / project overview
-
-**1. Walk me through BillFlow in 2 minutes. What problem does it solve?**
-It's a billing/invoicing SaaS for businesses that need to invoice customers and
-collect payments. It solves the operational overhead of manual billing: you
-store customers, generate invoices (one-off or recurring), email them as PDFs,
-record payments against them, and see revenue/outstanding/overdue on a dashboard.
-The engineering focus is correctness of money operations — no double charges, no
-partial writes, and a full audit trail.
-
-**2. Who are the users, and what are the core workflows?**
-The users are business staff (with roles — regular users and admins). Core
-workflows: (a) manage customers, (b) create and send invoices, (c) record
-payments, (d) auto-generate recurring invoices and overdue reminders via jobs,
-(e) monitor revenue on the dashboard.
-
-**3. What was your role / what did you build?**
-I built the full stack — the Angular frontend (typed services, Signals-based
-components, auth store), the Express API (auth, customers, invoices, payments,
-dashboard modules), the MongoDB schemas, the BullMQ jobs, and the test suite. I
-put special emphasis on the money-critical guarantees: idempotency, transactions,
-and audit logging.
-
-**4. What's the single hardest problem you solved?**
-Guaranteeing exactly-once financial writes under retries and races. A payment
-must never be recorded twice even if the client retries or two requests race. I
-solved it with defense in depth: an idempotency-key cache in front, plus a unique
-database index as the real backstop, plus wrapping the whole write in a
-transaction so the payment, the balance update, and the audit log all commit or
-all roll back together.
-
-**5. If you rebuilt it today, what would you change?**
-Three honest things: (1) add optimistic concurrency (a version field) so two
-admins editing the same record don't silently last-write-wins; (2) add
-per-tenant multi-tenancy isolation from day one; (3) precompute dashboard
-aggregates into a rollup collection so analytics stays fast at scale.
-
-## B. Tech stack — "why did you choose X?"
-
-**6. Why Angular over React/Vue?**
-Angular gives an opinionated, batteries-included structure (routing, forms, DI,
-HTTP) that keeps a larger app consistent, and Angular 21's Signals give
-fine-grained reactivity without extra libraries. For a project that needs to be
-maintainable and "interview-explainable," the opinionated structure is a plus.
-
-**7. Why Signals and NgRx — isn't that redundant?**
-No — they serve different scopes. Signals hold component-local state (form
-values, UI toggles, computed totals). NgRx holds only genuinely shared state —
-the current user and auth status — which is read by the route guard, the HTTP
-interceptor, and the nav shell. Putting list/CRUD state in NgRx would be
-boilerplate for no benefit, so those stay as local Signals. I actually removed a
-customer NgRx slice to enforce this.
-
-**8. Why MongoDB and not a relational DB for financial data?**
-Two reasons: invoices have variable-length line items that map naturally to an
-embedded document, and MongoDB (on a replica set) supports multi-document ACID
-transactions, which is what the money paths need. I'd concede that a relational
-DB is defensible for strict accounting/ledgering — the tradeoff is schema
-flexibility vs rigid, relationally-enforced ACID.
-
-**9. Why Express and not NestJS?**
-Express is lightweight and gives full control. I imposed structure myself with
-the routes → controller → service pattern, so I get separation of concerns
-without a heavier framework. NestJS would be a reasonable choice if the team
-wanted built-in DI and module conventions.
-
-**10. Why BullMQ/Redis instead of node-cron?**
-Jobs run outside the request/response cycle, survive process restarts, and get
-retries with backoff for free. They also scale independently — I can run more
-worker processes without touching the API. In-process cron would tie job
-execution to the web server's lifecycle and single process.
-
-**11. Why SendGrid over raw SMTP/Nodemailer?**
-Managed deliverability, and a clean API. Importantly, my mailer has a **dry-run
-mode** — if `SENDGRID_API_KEY` isn't set (dev/test), it logs instead of sending,
-so tests and local dev never send real email or crash.
-
-**12. Why PDFKit and not headless-browser (Puppeteer) rendering?**
-PDFKit generates the PDF in-memory as a Buffer with no Chromium dependency —
-much lighter to run on Render, no temp files, and fast for structured documents
-like invoices. Puppeteer would be overkill and memory-heavy for this.
-
-## C. System architecture / design
-
-**13. Draw the request flow from browser to DB.**
-Angular component → data-access service → `ApiService` (HttpClient) → auth
-interceptor attaches the Bearer token → Express route → auth middleware verifies
-JWT and sets `req.user` → thin controller validates and calls → service holds the
-business logic and opens a transaction → Mongoose → MongoDB. Response comes back
-as a `{ success, data }` envelope, which the frontend unwraps. Background work
-(recurring invoices, reminders) is enqueued to BullMQ/Redis and consumed by a
-separate worker.
-
-**14. How is the backend structured? Why routes → controller → service?**
-Each domain is a module folder. Routes wire URLs to controllers; controllers are
-thin (validate input, call a service, shape the HTTP response); services hold all
-business logic and data access. This keeps logic testable in isolation, reusable
-across controllers/jobs, and keeps HTTP concerns out of business code.
-
-**15. Where do background jobs fit? What runs them?**
-A shared BullMQ queue (created lazily so importing it never opens a Redis socket)
-holds jobs. A worker process consumes them and dispatches by job type:
-`generatePDF`, `sendReminder`, `createRecurringInvoice`, `overdueCheck`. A daily
-repeatable job flags overdue invoices and sends reminders.
-
-**16. How would you scale this to 10× traffic?**
-The API is stateless (JWT), so scale it horizontally behind a load balancer.
-Scale MongoDB Atlas (bigger tier, then sharding on a good key). Add more BullMQ
-worker instances for job throughput. Cache/precompute dashboard aggregates.
-Redis is already shared, so the queue and idempotency backstop work across
-instances.
-
-**17. Is the API stateless? Where does session state live?**
-Yes, stateless. The access token travels in the `Authorization` header; the
-refresh token lives in an httpOnly cookie; the only server-side "session" state
-is the refresh-token revocation denylist in MongoDB (hashed, TTL-expiring).
-
-**18. How do frontend and backend keep their contract in sync?**
-REST with a consistent JSON envelope (`{ success, data }` and a paginated
-variant). The frontend has a typed model layer that mirrors the API shapes
-(`ApiResponse<T>`, `Paginated<T>`, and per-feature models), so responses are
-strongly typed end to end.
-
-**19. What are the failure points and how does it degrade?**
-Redis down → enqueue times out gracefully; jobs are skipped but the API keeps
-serving. SendGrid down/unset → dry-run, no crash. DB down → 5xx with internals
-scrubbed from the client. The transaction helper deliberately fails loudly rather
-than silently writing non-atomically.
-
-## D. The four signature deep-dives
-
-### Idempotency
-
-**20. What is idempotency and why does billing need it?**
-An idempotent operation produces the same result whether it's applied once or
-many times. Billing needs it because network retries, timeouts, and double-clicks
-can send the same "create payment" request twice, and charging twice is
-unacceptable.
-
-**21. Walk me through your idempotency implementation end to end.**
-The client generates a UUID and sends it as an `Idempotency-Key` header on
-invoice/payment creation. Middleware checks a cache keyed by that value: on a
-hit it returns the stored response without re-running the operation. That's layer
-one. Layer two — the real correctness backstop — is a **unique index** on
-`idempotencyKey` in the Invoice/Payment collections. If two requests slip past
-the cache, the database rejects the second insert with a duplicate-key error
-(E11000), and the service catches it and returns the already-created record.
-
-**22. Two identical requests arrive the same millisecond and both miss the cache. What happens?**
-Exactly what the unique index is for. Both try to insert; the database lets one
-win and rejects the other with E11000. The service catches that and returns the
-existing record, so the client still gets a success and there's only one payment.
-
-**23. Why cache only 2xx responses?**
-Because caching a failure would permanently block a legitimate retry. If the
-first attempt failed transiently (say a timeout), the client should be able to
-retry with the same key and succeed. Only successful responses are safe to
-replay.
-
-**24. Where do you store the idempotency cache and how does it expire?**
-In the database (shared across API instances, so it works when scaled). The
-authoritative uniqueness is the unique index on the record itself; the cached
-response is what lets a repeat call return the same body cheaply.
-
-**25. What if the client never sends a key?**
-The operation proceeds without cache-level dedup. That's why the unique index
-exists as a backstop for the records themselves, and why the frontend always
-generates a fresh key per submit and disables the button while in flight.
-
-### Transactions
-
-**26. Which operations need a transaction and why?**
-Any write that touches more than one collection. Recording a payment writes the
-Payment, decrements the invoice balance, possibly flips the invoice to "paid,"
-and writes an audit log — four writes that must all succeed or all fail. Invoice
-create (invoice + counter + audit), cancel, send, and customer create/archive are
-similar.
-
-**27. What if the audit-log write fails halfway through recording a payment?**
-The whole transaction rolls back. There's no orphan payment, the balance is
-unchanged, and no audit entry is left dangling. The operation is atomic.
-
-**28. MongoDB transactions need a replica set — how do you handle standalone dev?**
-My `withTransaction` helper deliberately does **not** silently fall back to
-non-transactional writes on a standalone server — it fails loudly, because a
-silent fallback would break financial atomicity without anyone noticing. Tests
-spin up an in-memory replica set so transactions work in CI.
-
-**29. How did you test rollback?**
-I mock the audit-log write to throw mid-transaction, then assert that no
-payment/invoice was created and the customer/invoice balance is unchanged. That
-proves the rollback actually reverts every write in the transaction.
-
-### Audit logging
-
-**30. What gets audited and what's in an entry?**
-Every sensitive write — create/update/cancel/send on Invoice, create/update/
-archive on Customer, record on Payment, plus system actions like the overdue
-flip. Each entry captures who did it (or "system"), when, and a before/after
-snapshot of the record.
-
-**31. How do you keep secrets out of the audit log?**
-A `sanitize()` step strips sensitive keys — password, tokens, card fields,
-idempotency key — from the before/after snapshots before they're written. This
-also applies to error messages and logs.
-
-**32. Why write the audit entry inside the transaction instead of after?**
-Atomicity in both directions: you can't have an action without its audit record,
-and you can't have an audit record for an action that got rolled back. Writing it
-after the commit would open a window where the two disagree.
-
-### Auth
-
-**33. Walk me through login → authenticated request → logout.**
-Login verifies the bcrypt password hash, issues a short-lived access token
-(returned to the app) and a refresh token (set as an httpOnly cookie). Each API
-call carries the access token in the Authorization header; middleware verifies it
-and sets `req.user`. When the access token expires, the client calls refresh; the
-old refresh token is rotated (new one issued, old one denylisted). Logout
-denylists the refresh token so it can't be reused.
-
-**34. Why access + refresh tokens instead of one long-lived token?**
-A short access token (15 min) limits the damage if it leaks — it expires fast and
-isn't independently revocable. The refresh token lets you get new access tokens
-and can be rotated and revoked, giving you control that a single long-lived JWT
-wouldn't.
-
-**35. Where's the refresh token stored and why httpOnly cookie?**
-In an httpOnly cookie, so JavaScript can't read it — that mitigates token theft
-via XSS. Secure/SameSite attributes are tuned per environment.
-
-**36. JWTs are stateless — how do you revoke one on logout?**
-I keep a denylist: on logout (and on every rotation) the refresh token is stored
-as a SHA-256 hash with a TTL index that auto-purges it at expiry. Refresh checks
-the denylist and rejects revoked tokens. Storing only a hash means the raw token
-isn't recoverable from the DB.
-
-**37. What's token rotation and why?**
-Every refresh issues a brand-new refresh token and denylists the old one. If a
-refresh token is stolen and replayed, the legitimate rotation will have already
-invalidated it (or the attacker's use invalidates the real user's), which limits
-replay attacks.
-
-## E. Database design
-
-**38. Show me your main schemas and their relationships.**
-User (auth + role), Customer (with balance and active/archived status), Invoice
-(embedded line items + `customerId`, status, dueDate), Payment (`invoiceId` +
-`customerId`), Counter (invoice-number sequence), RevokedToken (denylist), and
-AuditLog. Invoices reference customers; payments reference both invoice and
-customer.
-
-**39. Embedded or referenced line items? Why?**
-Embedded. Line items have no life of their own — they're always created, read,
-and updated together with their invoice, and there's no need to query them
-independently. Embedding avoids joins and keeps the invoice a single atomic
-document.
-
-**40. How are invoice numbers generated with no gaps or duplicates?**
-A Counter document with an atomic `findByIdAndUpdate($inc)`, scoped per year
-(e.g. `invoice-2026`). The increment happens inside the invoice-create
-transaction, so numbers are sequential and unique — `INV-2026-0001`,
-`INV-2026-0002`, and so on.
-
-**41. What indexes did you add and why?**
-`customerId`, `status`, `dueDate` on Invoice for frequent filters, plus a
-compound `{status, dueDate}` for the overdue sweep; `invoiceId`/`customerId` on
-Payment; email/status/name on Customer; a **unique** index on `idempotencyKey`;
-and a **TTL** index on RevokedToken so expired tokens self-delete.
-
-**42. How do you "delete" an invoice?**
-Soft-delete — status changes to cancelled, the record is retained. Financial
-records shouldn't be hard-deleted (audit/compliance), and cancel is admin-only
-via RBAC.
-
-**43. How do you keep an invoice's balance correct as payments come in?**
-Each payment decrements the invoice/customer balance with `$inc` inside the
-payment transaction, flips the invoice to "paid" when fully covered, and guards
-against overpayment and payments on cancelled invoices. Because it's in a
-transaction plus idempotent, the balance changes exactly once per payment.
-
-**44. How does the TTL index on RevokedToken work?**
-Each denylist entry stores an expiry aligned to the token's own expiry; MongoDB's
-background TTL monitor deletes expired documents automatically, so the denylist
-stays small and self-cleaning.
-
-## F. Scenario-based
-
-**45. A user double-clicks "Pay $500." What prevents two payments?**
-Idempotency. The form generates one key per submit and disables the button while
-in flight; the middleware cache returns the same response on the repeat; and the
-unique index guarantees only one payment record even if both slip through.
-
-**46. A recurring-invoice job crashes and BullMQ retries it. Duplicate invoice?**
-No. Each recurring occurrence is created with a deterministic idempotency key
-(e.g. based on the job/occurrence identity), so a retried job hits the unique
-index and dedupes instead of creating a second invoice.
-
-**47. Redis is down. What happens to the API and jobs?**
-The API still serves reads and writes normally. Enqueue calls time out gracefully
-rather than hanging, so jobs are simply deferred/skipped — no crash. Jobs resume
-when Redis is back.
-
-**48. A payment is recorded but the app crashes before responding; the client retries. Result?**
-The retry carries the same idempotency key, so it returns the already-created
-payment. No duplicate, correct balance.
-
-**49. Someone registers with `role: "admin"` in the body. What happens?**
-The server ignores the client-supplied role and assigns the default — public
-registration can't self-assign admin. This privilege-escalation guard is
-explicitly tested.
-
-**50. An attacker floods `/login` with guesses. Defenses?**
-Rate limiting on the auth routes (skipped only in tests), bcrypt's deliberate
-cost slowing each attempt, and an identical error for wrong-email vs
-wrong-password so the attacker learns nothing.
-
-**51. A stolen access token — how bad, for how long?**
-Bounded — it's valid ~15 minutes and can't be refreshed without the httpOnly
-refresh cookie. The refresh token is revocable, so the session can be killed.
-
-**52. Invoice PDF for a 500-line invoice — memory concern?**
-PDFKit builds it as a Buffer; for typical invoices that's fine. If documents got
-very large I'd stream the PDF directly to the response instead of buffering the
-whole thing.
-
-**53. Two admins edit the same customer simultaneously — last write wins?**
-Currently yes, last-write-wins. The improvement I'd make is optimistic
-concurrency: a version field checked on update so the second writer gets a
-conflict instead of silently clobbering. (Good "what I'd improve" answer.)
-
-**54. The dashboard aggregation slows down as data grows. What do you do?**
-Ensure the aggregation is index-backed, paginate, and precompute daily revenue
-rollups into a summary collection (or cache them) so the dashboard reads
-pre-aggregated data instead of scanning all payments each time.
-
-## G. Frontend-specific
-
-**55. Standalone components vs NgModules — why standalone?**
-Standalone removes NgModule boilerplate, makes dependencies explicit per
-component, and enables straightforward lazy loading of routes. It's the modern
-Angular default and keeps the feature-folder structure clean.
-
-**56. Signals vs RxJS Observables — when each?**
-Signals for synchronous local state and derived values (form totals, UI flags) —
-they're simple and integrate with the template. Observables/RxJS for async
-streams and event pipelines (debounced search, HTTP, cancellation with
-`switchMap`). I bridge them with `toSignal`/`toObservable` where needed.
-
-**57. How does the HTTP interceptor work?**
-It attaches the Bearer access token and credentials to same-origin API calls,
-skips `/auth/*` routes, and on a 401 triggers a single refresh-and-retry. If the
-refresh fails, it tears down the session and redirects to login.
-
-**58. Concurrent requests all get 401 at once. How do you avoid 5 refresh calls?**
-Single-flight refresh: the first 401 starts a refresh observable shared via
-`shareReplay`; concurrent 401s subscribe to that same in-flight refresh and then
-retry, so only one refresh request actually goes out.
-
-**59. How does the route guard work, and how do you return the user after login?**
-`authGuard` checks `AuthService.isAuthenticated()`. If not authed, it redirects to
-`/auth/login` with a `returnUrl` query param, and after successful login the app
-navigates back to that URL.
-
-**60. How do you cancel a stale search request as the user types?**
-Debounce the input, then `switchMap` the term to the HTTP call. `switchMap`
-cancels the previous inner request when a new term arrives, so only the latest
-search resolves, and I reset to page 1 on a new term.
-
-**61. How is the frontend fully typed — no `any`?**
-A typed model layer: a generic API envelope (`ApiResponse<T>`, `Paginated<T>`,
-`AppError`) plus per-feature domain models (customer, invoice, payment,
-dashboard, auth). Services and components use these generics end to end.
-
-**62. How do you show friendly errors instead of raw server errors?**
-The backend returns a stable `errorCode`; the frontend maps codes to friendly
-copy via a `FRIENDLY_ERROR_MESSAGES` map with a sensible fallback, and flags
-network/status-0 errors distinctly.
-
-## H. Security
-
-**63. Top 3 security risks in a billing app and mitigations.**
-(1) Duplicate/fraudulent charges → idempotency + transactions. (2) Auth/token
-compromise → short access tokens, httpOnly rotating refresh tokens, revocation,
-RBAC. (3) Sensitive-data leakage → sanitized audit logs, scrubbed 5xx responses,
-bcrypt with `select:false`, never logging secrets.
-
-**64. How do you prevent user enumeration on login?**
-Unknown-email and wrong-password return the exact same error, so an attacker
-can't tell which emails are registered.
-
-**65. How are passwords stored?**
-bcrypt-hashed with a configurable cost. The hash field is `select:false` and
-stripped in `toJSON`, so it's never returned by the API or logged.
-
-**66. How do you prevent secrets leaking into logs/audit/errors?**
-Audit snapshots run through `sanitize()`; 5xx handlers log details server-side but
-send a generic message to the client; passwords/tokens/card data are never logged
-anywhere.
-
-**67. XSS/injection concerns — how handled?**
-Email/template content is HTML-escaped; user-supplied search terms are
-regex-escaped before building queries; Mongoose parameterizes queries. Angular
-escapes template bindings by default on the frontend.
-
-**68. How would you add multi-tenancy / data isolation?**
-Add an org/tenant id to every record and scope every query and index by it,
-enforced centrally (e.g. in the service layer or a query helper) so no endpoint
-can accidentally read across tenants. This is future work I'd prioritize.
-
-## I. Testing / quality
-
-**69. What's your testing strategy? What's covered?**
-Two tiers. Socket-free **unit tests** always run (tokens, RBAC, total
-computation, pagination, audit sanitize, dashboard pipeline, worker dispatch).
-**DB-backed integration tests** cover the real flows (auth, customer, invoice,
-payment, idempotency, notification, jobs/dashboard) with happy and failure paths.
-DB tests are gated by an env flag so they skip where there's no database.
-
-**70. How do you test idempotency and rollback specifically?**
-Idempotency: call the create path twice with the same key and assert one record,
-one balance change, and identical responses — at both the service and HTTP
-duplicate-key levels. Rollback: force the audit write to throw and assert nothing
-was persisted and balances are unchanged.
-
-**71. How do you test code depending on Redis/SendGrid/Mongo without them?**
-Dry-run mailer when the API key is unset, a `QUEUE_DISABLED` flag to no-op the
-queue, an in-memory MongoDB (standalone and replica set) for DB tests, and an
-env gate to skip DB tests in restricted sandboxes.
-
-**72. Do you chase 100% coverage?**
-No — I target meaningful coverage: every service gets a happy path and a failure
-path, and the risky money logic (idempotency, transactions, RBAC) gets explicit
-dedicated tests. Coverage is a means, not the goal.
-
-## J. Curveballs / "why" follow-ups
-
-**73. Convince me MongoDB is safe for money.**
-On a replica set, MongoDB supports multi-document ACID transactions with
-snapshot isolation. I wrap every multi-collection money write in one, and my
-helper refuses to run non-transactionally, so there's no silent weakening of the
-guarantee. Combined with idempotency and a unique index, writes are atomic and
-exactly-once. For a full general ledger I might still choose SQL, but for this
-domain the guarantees are sufficient and proven by the rollback tests.
-
-**74. Idempotency key + unique index — isn't the middleware cache redundant?**
-They do different jobs. The unique index guarantees **correctness** (no duplicate
-record). The cache is an **optimization + UX**: it returns the same response body
-without re-running the operation or hitting a duplicate-key error path. You could
-drop the cache and stay correct, but you'd do more work and return a less clean
-response on retries.
-
-**75. What happens to idempotency if you run multiple API instances?**
-Still safe, because both mechanisms live in shared MongoDB, not in-process
-memory. Any instance sees the same cache and the same unique index, so dedup
-holds across the whole fleet.
-
-**76. Refresh token in a cookie, access token in JS — what about CSRF?**
-The access token is sent explicitly in a header, not automatically by the
-browser, so it's not CSRF-exploitable. The refresh cookie uses SameSite (and
-Secure) to limit cross-site sending. If I needed cookie-based auth for state-
-changing routes, I'd add a CSRF token as well.
-
-**77. Doesn't putting the audit log in the transaction hurt write performance?**
-There's a small cost, but correctness wins — you can't have actions and their
-audit trail disagree. If audit volume became a bottleneck I'd keep the write in
-the transaction but archive/offload old audit data out of the hot collection.
-
-**78. Where would business logic leak into a controller if you weren't careful?**
-Anywhere you're tempted to compute or branch in the controller — e.g. computing
-invoice totals, deciding whether an invoice is fully paid, or building the audit
-snapshot. In BillFlow all of that lives in the service; the controller only
-validates input, calls the service, and shapes the HTTP response.
+# 1. Architecture & Tech Choices
+
+**Q1. Draw the request flow, browser to DB.**
+Angular component → feature data-access service → central `ApiService` (HttpClient) → `authInterceptor` attaches the Bearer token + `withCredentials` → Express route → `authMiddleware` verifies the JWT and sets `req.user` → thin controller validates and shapes the HTTP response → `*.service.js` holds business logic and opens a transaction → Mongoose → MongoDB. Responses use a `{ success, data }` envelope the frontend unwraps. Async work (PDF/email, recurring, overdue) is enqueued to BullMQ and consumed by a **separate worker process**.
+
+```
+Angular (Signals) ──HTTP──> Express API ──> service layer ──> MongoDB (replica set)
+       │  authInterceptor        │  authMiddleware / RBAC        ▲
+       │  (Bearer + cookie)      │  idempotency + transactions   │  $inc balance, audit
+       ▼                         ▼                               │
+   NgRx auth slice          BullMQ enqueue ──> Redis ──> Worker ─┘ (PDF, email, recurring, overdue)
+```
+
+**Q2. Why `routes → controller → service`?**
+Controllers stay thin — validate input, call a service, shape the response. All business logic and data access live in the service, so the same logic is reusable from HTTP controllers *and* from BullMQ workers (e.g. `createRecurringOccurrence` is called by the worker, never by an endpoint), and it's unit-testable without HTTP.
+
+**Q3. Why Angular Signals *and* NgRx — isn't that redundant?**
+They cover different scopes. **Signals** hold component-local state — form values, UI toggles, computed invoice totals, list pagination/search. **NgRx holds only genuinely shared state**: the current user + auth status, read by the route guard, the interceptor, and the nav shell. The store has exactly one feature slice (`auth`); every list/CRUD screen keeps its state in local Signals with a `reload$` + `switchMap` pattern (stale-request cancellation). `provideEffects([])` is wired but empty — all async auth work lives in `AuthService`, not effects. (A customer NgRx slice was deliberately removed to enforce this "NgRx for shared state only" rule.)
+
+**Q4. Why MongoDB for financial data?**
+Invoices have variable-length line items that map naturally to an **embedded array** (single atomic document, no joins), and MongoDB on a **replica set** gives multi-document ACID transactions — exactly what the money paths need. I'd concede a relational DB is defensible for a strict general ledger; the trade-off is schema flexibility vs. relationally-enforced constraints.
+
+**Q5. Why BullMQ/Redis instead of node-cron in the web process?**
+Jobs run outside the request/response cycle, survive process restarts, retry with exponential backoff, and scale independently (spin up more worker instances without touching the API). CLAUDE.md explicitly forbids in-process cron for recurring invoices. Redis is used **only** as the queue backend, not as a general cache.
+
+**Q6. Why SendGrid over SMTP/Nodemailer?**
+Managed deliverability and a clean HTTP API (no SMTP socket handling). The decisive implementation detail is the **dry-run fallback**: `utils/mailer.js` lazily requires `@sendgrid/mail` only when `SENDGRID_API_KEY` is set; when it's unset it logs `[mailer] SENDGRID_API_KEY not set — skipping send…` and returns `{ dryRun: true }`. So importing the module never opens a socket or even requires the package, and dev/test/CI never send real mail or crash. Attachments are converted to base64 in `buildSendGridMessage` (pure/testable). *(The code and deps are 100% SendGrid; `.claude/CLAUDE.md`, the spec, and the README have all been aligned to match.)*
+
+**Q7. Why PDFKit and not headless-browser rendering?**
+`renderInvoicePdf` builds the PDF as an in-memory `Buffer` (collects `data` chunks, resolves on `end`) — no Chromium, no temp files. That matters because Render's filesystem is ephemeral, so nothing is persisted; the caller decides whether to stream it (`GET /invoices/:id/pdf`) or attach it to email. Puppeteer would be heavier and memory-hungry for structured documents. *(The `Invoice.pdfUrl` field exists but is never written — PDFs are always rendered on demand.)*
+
+**Q8. How do frontend and backend keep their contract in sync?**
+REST with a consistent JSON envelope: `{ success, data }` for single items, `{ success, items, pagination }` for lists. The frontend has a typed model layer (`ApiResponse<T>`, `Paginated<T>`, `AppError`, per-feature models) — no `any` anywhere — and `ApiService` unwraps `res.data`. Stable backend `errorCode`s map to friendly copy via a `FRIENDLY_ERROR_MESSAGES` table.
+
+---
+
+# 2. Financial Correctness
+
+**Q9. What is idempotency and why does billing need it?**
+An idempotent operation yields the same result whether applied once or many times. Network retries, timeouts, and double-clicks can resend "create payment", and charging twice is unacceptable (**FR-2.8**, **FR-3.4**; the BRD's headline success metric is *zero* duplicate financial records).
+
+**Q10. Walk through the two-layer idempotency implementation.**
+- **Layer 1 — middleware cache.** The client sends an `Idempotency-Key` header (the frontend generates a fresh `crypto.randomUUID()` per submit). `idempotencyMiddleware` looks it up in the `IdempotencyKey` collection: on a hit it **replays the stored `{ statusCode, response }` and the controller never runs**. On a miss it wraps `res.json` to cache the response — but **only 2xx**, and the write is fire-and-forget *after* the response is sent, tolerating E11000.
+- **Layer 2 — unique DB index (the real backstop).** `Invoice` and `Payment` both have `idempotencyKey: { unique, sparse }`. The service stores the header value on the created doc; if two requests race past the cache, the second insert throws **E11000** and the service catches it and **returns the already-existing record**.
+
+**Q11. Two identical requests arrive the same millisecond and both miss the cache — what happens?**
+Exactly the case the unique index exists for. Both attempt to insert; the DB lets one win and rejects the other with E11000; the service returns the existing record. The client still sees success and there's exactly one invoice/payment.
+
+**Q12. Why cache only 2xx responses?**
+Caching a 4xx/5xx would permanently replay a *transient* failure and block a legitimate retry with the same key. Only a successful result is safe to replay. This is the "hardened" fix over the naive idempotency pattern documented in the project's `idempotent-endpoint` skill.
+
+**Q13. If the process dies after responding but before the background cache write?**
+The cache entry is simply absent — but correctness is unaffected, because the unique `idempotencyKey` index on the record is the authoritative guarantee. The cache is a fast-path / UX optimization, not the enforcement (the middleware comment says exactly this). Cache entries also self-expire via a 24h TTL on `IdempotencyKey.createdAt`.
+
+**Q14. Which operations need a transaction, and what's inside one?**
+Any write touching more than one collection. Recording a payment: create `Payment` + `$inc` customer balance + maybe flip invoice → `paid` + write `PAYMENT_RECORDED` / `INVOICE_PAID` audit logs. Invoice create: `Counter.next` + `Invoice.create` + `$inc` balance + `INVOICE_CREATED`. Cancel, send, customer create/update/archive, and the overdue flip are all similarly wrapped in `withTransaction`.
+
+**Q15. What if the audit-log write fails halfway through recording a payment?**
+The whole transaction rolls back — no orphan payment, balance unchanged, no dangling audit entry. This is tested directly: mock `AuditLog.create` to reject and assert nothing persisted and balances unchanged.
+
+**Q16. MongoDB transactions need a replica set — how do you handle standalone dev?**
+`withTransaction` deliberately **does not** silently fall back to non-transactional writes on a standalone `mongod` — it fails loudly. A silent fallback would break financial atomicity without anyone noticing, which is worse than an error. Tests spin up an in-memory single-node replica set so transactions work in CI.
+
+**Q17. Explain the customer balance invariant (BR-2).**
+`Customer.balance` is a stored running total that is **only ever mutated by `$inc`** inside invoice/payment transactions — never recomputed from scratch, never client-set. The write path enforces this: create/update controllers use an `EDITABLE_FIELDS` whitelist (`name`, `email`, `phone`, `billingAddress`), so a client-sent `balance` is silently dropped. Invoice create `$inc +total`; completed payment `$inc −amount`; cancel decrements only the still-unpaid remainder; an edit that changes the total applies just the `balanceDelta`.
+
+**Q18. How are invoice numbers race-safe (FR-2.4)?**
+A `Counter` document per scope (`invoice-2026`) with an atomic `findByIdAndUpdate({ $inc: { seq: 1 } }, { upsert, new, session })`. The increment runs **inside the invoice-create transaction**, so numbers are sequential (`INV-2026-0001`, `INV-2026-0002`…) and race-free under concurrency (`formatInvoiceNumber` zero-pads the seq to 4 digits). Bonus: if an idempotent duplicate aborts the transaction, the counter increment rolls back with it, so a duplicate request doesn't waste a number.
+
+**Q19. How do you "delete" an invoice, and why cancel-not-delete (BR-1)?**
+Soft cancel only — `status → 'cancelled'`, record retained. **There is no hard-delete path.** Financial records with payments against them must preserve the payment and audit trail for compliance. Cancel is **admin-only** via RBAC, is idempotent (already-cancelled → no-op), refuses a fully-paid invoice (409 `INVOICE_PAID`), and decrements the customer balance by only the unpaid remainder.
+
+**Q20. Server-side totals — why never trust the client (FR-2.2)?**
+`computeTotals` (pure, unit-tested) recomputes per-item `total = round2(qty × unitPrice)`, `subtotal`, `tax = round2(subtotal × rate)`, `totalAmount`, rounding to 2 decimals. Any client-sent subtotal/tax/total is ignored. It also validates each item (description, `quantity > 0`, `unitPrice ≥ 0`) and that `taxRate` is a fraction 0..1. *(Frontend nuance: the invoice form works in tax **rate %** for UX but sends `tax` as an **amount**; the backend is still the source of truth.)*
+
+**Q21. Overpayment / paying a cancelled invoice?**
+In the payment transaction, `remaining = totalAmount − Σ completed payments`. For a `completed` payment: `remaining ≤ 0` → 409 `INVOICE_PAID`; `amount > remaining` → 409 `OVERPAYMENT`. Cancelled invoices reject payment (409 `INVOICE_CANCELLED`). Partial and exact payments are allowed; only `completed` payments move the balance/status (`pending`/`failed` are audit-only records, and there's no endpoint to later promote them — a known limitation). Paying a `draft` in full is allowed and flips it straight to `paid`.
+
+---
+
+# 3. Auth & Security
+
+**Q22. Walk through login → authenticated request → logout.**
+Login verifies the bcrypt hash and issues a short access token (in the response body) + a refresh token (**httpOnly cookie**, `path=/api/auth`). Each API call carries the access token in `Authorization: Bearer …`; `authMiddleware` verifies it and sets `req.user = { id, role, email }`. On expiry the client calls `/refresh`, which **rotates**: verifies the token, checks the denylist, denylists the consumed token, and issues a fresh pair. Logout denylists the refresh token and clears the cookie.
+
+**Q23. Why access + refresh instead of one long-lived token?**
+The access token is short-lived (15m) so a leak is bounded, and being stateless it isn't independently revocable. The refresh token (7d) can be rotated and revoked, giving real session control a single long-lived JWT can't. The access token payload carries `{ sub, role, email }`; the refresh token carries **only `sub`** — role is re-read from the DB on refresh, so a demoted user's new access token reflects the current role (and a deleted user is rejected).
+
+**Q24. JWTs are stateless — how do you revoke one on logout?**
+A `RevokedToken` denylist. On logout *and on every rotation*, the token is stored as its **SHA-256 hash** (never the raw token) with `expiresAt` set to the token's own `exp`. A TTL index (`expires: 0`) auto-purges the row at natural expiry, so the denylist stays small and self-cleaning. `refresh` rejects any token whose hash is in the denylist. The upsert is keyed on the hash (`$setOnInsert`), so repeated logout is a no-op with no duplicate-key error → logout is idempotent, and a missing/invalid cookie is a safe no-op success.
+
+**Q25. What's token rotation and why does it matter?**
+Every `/refresh` issues a brand-new refresh token and denylists the old one. A stolen, already-rotated token is worthless; if an attacker uses a token before the legitimate user, the rotation invalidates the other party's copy — limiting replay windows. The frontend interceptor de-dupes concurrent 401s into a single in-flight refresh (`shareReplay`) and retries the original request once.
+
+**Q26. RBAC — where is it enforced?**
+`requireRole('admin')` is a middleware factory (403 `FORBIDDEN` if the role isn't allowed, 401 `NO_TOKEN` if unauthenticated). It gates exactly one route today: `DELETE /api/invoices/:id` (invoice cancel, **BR-5**). All other protected routes require authentication only. Customer archive is intentionally *not* admin-gated — the argument is that BR-5 restricts *permanent* removal, and only soft-archive is exposed (no hard-delete exists), so the admin restriction doesn't apply. The frontend has a `UserRole` type but currently gates UI on `authGuard` only, not role.
+
+**Q27. The privilege-escalation fix — why does register never trust the client role?**
+`register` reads **only** `{ name, email, password }` from the body; `role` is deliberately never read, so every public registration gets the schema default `'staff'`. Admins are provisioned out-of-band (seed / DB update). This is explicitly tested: a `role: 'admin'` in the body is ignored and the user is created as staff.
+
+**Q28. How are passwords stored, and how do you avoid leaking them?**
+bcrypt-hashed with a configurable cost (`BCRYPT_SALT_ROUNDS`, default 10; 4 in tests). `passwordHash` is `select: false` (login opts in with `.select('+passwordHash')`) and stripped in `toJSON` — so it's never returned by the API. **No secrets in logs/audit**: `audit.sanitize()` strips a fixed blocklist (`password`, `passwordHash`, `token`, `refreshToken`, `accessToken`, `cardNumber`/`cardNo`, `cvv`/`cvc`, `idempotencyKey`) from before/after snapshots (**FR-6.2**); 5xx errors are logged server-side but returned to the client as a generic `INTERNAL_ERROR`.
+
+**Q29. How do you prevent user enumeration on login?**
+Unknown-email and wrong-password both return the identical `401 INVALID_CREDENTIALS` ("Invalid email or password"). *(Honest caveat: `/register` does return `409 EMAIL_TAKEN`, which reveals whether an email is registered — a known trade-off for a friendlier signup UX.)*
+
+**Q30. Other auth hardening?**
+Rate limiting on `/register` and `/login` (20/IP/15min, skipped in tests; `/refresh` and `/logout` are not limited). Cookie attributes tuned per env (`Secure` + `SameSite=None` in prod for the Netlify→Render cross-origin, `SameSite=Strict` otherwise). Customer search terms are regex-escaped before building Mongo `$or` queries; email/PDF template content is HTML-escaped; Mongoose parameterizes queries; Angular escapes bindings by default.
+
+**Q31. Refresh token in a cookie, access token in JS — CSRF and XSS?**
+The access token is sent explicitly in a header (not automatically by the browser), so it isn't CSRF-exploitable; the refresh cookie relies on `SameSite` / `Secure`. *(Honest caveat: the access token is persisted to `localStorage`, which is XSS-readable — a pragmatic UX choice I'd flag; a stricter posture keeps it in memory only.)*
+
+---
+
+# 4. Async & Background Jobs
+
+**Q32. What runs the jobs, and what are the job types?**
+A single lazily-created BullMQ queue (`invoiceJobs`) and a **separate worker process** (`npm run worker`). The worker dispatches by `job.name`: `generatePDF` (render + email PDF), `sendReminder`, `createRecurringInvoice`, `overdueCheck`. The queue is created only on first enqueue (import-safe for tests), and `QUEUE_DISABLED=1` makes producers clean no-ops. Producers share a retry policy (`attempts: 3`, exponential backoff from 5s, `removeOnComplete: true`, `removeOnFail: false` to keep failures for inspection).
+
+**Q33. Recurring invoices — why self-rescheduling delayed jobs, not cron (FR-2.5)?**
+Each recurring occurrence is a **delayed job that re-arms itself** after it runs — no BullMQ repeatable/cron key to manage per invoice, and stop conditions are checked naturally at each occurrence (if the series should stop, the worker just doesn't re-enqueue). `cycleToDelayMs`: monthly = 30d, quarterly = 91d, yearly = 365d — a documented **approximation** trade-off (fixed intervals, not exact calendar months). Each occurrence is created as a concrete, non-recurring invoice (`isRecurring: false`) with `dueDate = now + one cycle`.
+
+**Q34. BR-3 stop conditions — when does the recurring chain end?**
+`createRecurringOccurrence` returns `null` (and the worker does **not** re-arm) if: the source invoice is missing / not recurring / has no cycle, the source is `cancelled`, or the customer is missing or `archived`. Turning `isRecurring` off via the update endpoint clears `recurringCycle` and stops the series.
+
+**Q35. A recurring job crashes and BullMQ retries it — duplicate invoice?**
+No. The worker passes a deterministic key `recurring:<jobId>` as the occurrence's `idempotencyKey`. A retried job (same `job.id`) hits the unique index (E11000) and returns the existing occurrence instead of creating a second — so **no double-charge**. Email send and re-scheduling are independent best-effort steps (each in its own try/catch), so a Redis/email blip can't duplicate the invoice or break the chain.
+
+**Q36. Overdue auto-flagging — why cron here, and how is BR-4 enforced?**
+Overdue is a **system-wide daily sweep** with no per-entity stop condition, so a BullMQ **repeatable cron** (`0 2 * * *`) fits — it runs forever on a fixed cadence and survives restarts (BullMQ stores the schedule in Redis and dedupes identical repeat keys). `flagOverdueInvoices` finds `status:'sent', dueDate < now`, then **re-reads each candidate inside a transaction and re-asserts the precondition** (guards against a payment having flipped it to `paid` meanwhile), flips to `overdue`, writes `INVOICE_OVERDUE` (system action, `performedBy: undefined`), and enqueues a reminder. Because the flip moves it out of `sent`, each invoice is flagged exactly once. **BR-4: overdue is system-computed, never manually set** — no endpoint can set it. *(The compound `{status, dueDate}` index backs this query.)*
+
+**Q37. How do reminders avoid spamming (FR-4.1)?**
+`remindUpcomingInvoices` reminds `sent` invoices due within 3 days that have no prior `lastReminderAt`, then stamps `lastReminderAt` — so a second daily run reminds each invoice at most once. The manual `POST /invoices/:id/remind` endpoint (admin + staff) also stamps `lastReminderAt` so the sweep won't immediately re-remind; it refuses paid/cancelled invoices (409).
+
+**Q38. Best-effort enqueues + fast-fail — why does the API never hang on Redis?**
+The shared ioredis connection uses `maxRetriesPerRequest: null`, so a command issued while Redis is down would buffer forever. `addInvoiceJob` therefore races the enqueue against a `QUEUE_ENQUEUE_TIMEOUT_MS` (3s default) timeout and rejects promptly. Callers treat enqueue as **best-effort** (invoice create still commits; the enqueue failure is logged, not fatal). The notification service is a thin producer — it only enqueues, never calls the email provider — satisfying **FR-4.3** (async delivery never blocks the API). *(Known gap: `registerOverdueCheck` on startup calls `queue.add` directly, bypassing the timeout race — a slow Redis at boot could delay startup.)*
+
+**Q39. Why send the welcome email synchronously but invoice email via a queue?**
+Registration is a low-frequency, non-financial action, so `register` calls `sendMail(welcomeEmailTemplate(user))` synchronously — but wrapped in try/catch as **best-effort**, so a SendGrid failure never fails registration (and no audit entry is written for it). Invoice/reminder delivery is higher-volume and must never block the API, so `sendInvoice` marks the invoice sent + enqueues `generatePDF`, and the worker renders + emails the PDF attachment.
+
+---
+
+# 5. Dashboard & Reporting
+
+**Q40. What does the dashboard show, and how is it computed (FR-5.1/5.2)?**
+`GET /dashboard/summary` returns `totalRevenue` (sum of **completed** payments), `totalOutstanding` (sum of all `Customer.balance` — which by the BR-2 invariant already equals unpaid invoices minus payments, so no re-derivation needed), `totalOverdue`, and `overdueCount`. `GET /dashboard/revenue-trend` returns a time-series of completed payments grouped by month (`%Y-%m`) or day (`%Y-%m-%d`) over an optional `from`/`to` range. Both routes require auth; admin and staff may view.
+
+**Q41. Why is the aggregation-building logic split out as a pure function?**
+`buildRevenueTrendPipeline({ from, to, granularity })` returns the MongoDB aggregation array without touching the DB, so the grouping/date-bucketing logic is **unit-testable without a database**. The service just runs the pipeline and rounds to 2 decimals. The summary uses three parallel aggregations (`Promise.all`) so it's a single round-trip fan-out.
+
+**Q42. Is the data real-time (FR-5.3)?**
+Yes — the dashboard reads live aggregations on every request (no caching layer today), so it's inherently near-real-time. The trade-off is cost as payment volume grows; the forward-looking answer is precomputed daily rollups (see Q52). On the frontend, the dashboard fetches summary + trend in parallel (`forkJoin`) and renders KPI cards plus a Chart.js line chart that destroys the prior chart instance before re-render (no leaks).
+
+---
+
+# 6. Testing
+
+**Q43. What's the testing strategy?**
+Two tiers. **Socket-free unit tests** always run — pure logic with mocked models: `computeTotals`, `formatInvoiceNumber`, `cycleToDelayMs`, `audit.sanitize`, pagination, the dashboard aggregation pipeline, JWT/token behavior, `authMiddleware` / `requireRole` RBAC, bcrypt, the SendGrid mailer (dry-run + `buildSendGridMessage`), and idempotency-middleware behavior against a mocked model. **DB-backed integration tests** cover real flows (auth, customer, invoice, payment, idempotency, notification, jobs/dashboard) with happy *and* failure paths.
+
+**Q44. Why the split, and how is the DB provided?**
+DB tests are gated by `BILLFLOW_SKIP_DB_TESTS` (via `describeDb = flag ? describe.skip : describe`) because they need a real TCP socket — some sandboxed CI/dev environments block `listen()` / `connect()`. The security-critical logic still has full socket-free coverage there. DB tests use `mongodb-memory-server`: a **standalone** instance where no transaction is needed (auth, PDF, idempotency), and a **single-node replica set** (`MongoMemoryReplSet`) everywhere multi-document transactions are exercised (invoice/payment/customer/job flows).
+
+**Q45. How do you test idempotency and rollback specifically?**
+**Idempotency:** call the create path twice with the same key and assert one record, one balance change, and identical responses — at both the service level and via real HTTP routes with a minted token. **Rollback:** mock `AuditLog.create` to throw mid-transaction and assert no invoice/payment was created and balances are unchanged — proving the transaction reverts every write.
+
+**Q46. How do you test code that depends on Redis/SendGrid/Mongo without them?**
+Dry-run mailer when `SENDGRID_API_KEY` is unset; `QUEUE_DISABLED=1` to no-op the queue (no Redis socket); in-memory Mongo (standalone + replica set); and the `BILLFLOW_SKIP_DB_TESTS` env gate for restricted sandboxes. Test setup also uses cost-4 bcrypt and throwaway JWT secrets.
+
+**Q47. Adversarial / review-driven testing — anything notable?**
+The privilege-escalation fix (register ignoring a client `role`) came from a security review and has a dedicated test. Tests assert anti-enumeration (identical login error), the transaction rollback path, the recurring-occurrence dedupe (same key → one doc), and that email templates never leak `password` / `cardnumber` / `cvv`. *(Stack note: backend uses Jest; the frontend uses Angular TestBed with Karma/Jasmine per the spec — CLAUDE.md's "Jest for every service/controller" rule is scoped to the backend.)*
+
+---
+
+# 7. Database Design (quick reference)
+
+| Model | Notable fields | Key indexes |
+|---|---|---|
+| `User` | `email` (unique), `passwordHash` (`select:false`), `role` enum `admin`/`staff` default `staff` | unique `email` |
+| `Customer` | `balance` (server-only), `status` enum `active`/`archived`, embedded `billingAddress` | `status`, `email`, `name` (email **not** unique) |
+| `Invoice` | embedded `items[]`, `subtotal`/`tax`/`totalAmount`, status enum (5), `isRecurring`, `recurringCycle`, `lastReminderAt`, `idempotencyKey` (unique, sparse) | `customerId`, `status`, `dueDate`, compound `{status,dueDate}`, unique `invoiceNumber` |
+| `Payment` | `invoiceId`, `customerId` (denormalized), `amount`, `method`/`status` enums, `idempotencyKey` (unique, sparse) | `invoiceId`, `customerId`; **no `updatedAt`** (immutable records) |
+| `Counter` | `_id` scope key (`invoice-2026`), `seq`; atomic, session-aware `next(id, session)` | — |
+| `IdempotencyKey` | `key` (unique), cached `{ statusCode, response }` | TTL `expires: 86400` (24h) |
+| `RevokedToken` | `tokenHash` (SHA-256, unique), `expiresAt` | TTL `expires: 0` (delete once past) |
+| `AuditLog` | `action`, `entityType`, `entityId`, `performedBy`, before/after (sanitized), `timestamp` | *none currently* |
+
+**Embedded vs referenced line items?** Embedded — items have no independent life, are always read/written with their invoice, and are never queried alone; embedding keeps the invoice one atomic document with no joins.
+
+---
+
+# 8. How Would You Extend This? (forward-looking)
+
+**Q48. Two admins edit the same customer at once — what happens, and what would you add?**
+Currently last-write-wins. I'd add **optimistic concurrency**: a `version` field checked on update so the second writer gets a conflict instead of silently clobbering.
+
+**Q49. How would you add a live payment gateway (Stripe/Razorpay)?**
+Payments are recorded from external confirmation today (BRD §3.2). I'd add a gateway integration with **webhook handlers** — and the existing idempotency infrastructure (key + unique index) maps directly onto webhook `event.id` dedupe, since providers redeliver events. I'd also add an endpoint/flow to promote a `pending` payment to `completed` (today that transition has no path).
+
+**Q50. How would you add multi-tenancy / data isolation?**
+Add a tenant/org id to every record and **scope every query and index by it**, enforced centrally in the service layer (or a query helper) so no endpoint can read across tenants. Explicitly out of scope today (BRD §3.2).
+
+**Q51. Calendar-accurate recurring cadence?**
+Replace the fixed 30/91/365-day approximations with real calendar-month arithmetic (e.g. day-of-month clamping), or drive the schedule from an anchor date rather than "now + N days".
+
+**Q52. The dashboard aggregation slows down as payments grow — what do you do?**
+Keep the aggregation index-backed and paginated, then **precompute daily revenue rollups** into a summary collection (or cache them) so the dashboard reads pre-aggregated data instead of scanning all payments. (Today `getRevenueTrend` runs a live `$match status:completed` + monthly `$group` pipeline on every request.)
+
+**Q53. If you rebuilt it today, top three changes?**
+(1) Optimistic concurrency (version field); (2) multi-tenancy isolation from day one; (3) precomputed dashboard rollups. Smaller cleanups: move the access token out of `localStorage`, wire the frontend `returnUrl` after guard bounce (currently the guard never appends it, so deep links land on `/dashboard`), add a `status` index on `Payment`, index `AuditLog` (e.g. `entityId`/`timestamp`), and route `registerOverdueCheck` through the fast-fail enqueue.
 
 ---
 
 ## Quick-prep priority
 
-Master cold: **B7, the four deep-dives (D20–D37), and F45–F48** — that's where
-engineering judgment shows and where a strong interviewer will push hardest. For
-everything else, the one- or two-sentence version above is enough.
+Master cold: **the four signature concerns** (idempotency, transactions, audit, auth — Q9–Q31), the **balance / counter / cancel** trio (Q17–Q19), and the **async trade-offs** (Q33–Q39). Those are where engineering judgment shows and where a strong interviewer pushes hardest.
