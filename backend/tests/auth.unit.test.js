@@ -8,6 +8,12 @@
 
 const bcrypt = require('bcrypt');
 
+// Mock the User model + the SendGrid mailer so register()'s welcome-email path can be exercised
+// without a DB or network. (jest.mock is hoisted above the requires below.) The pre-existing
+// validation-path tests never reach these mocks, so they're unaffected.
+jest.mock('../src/models/User', () => ({ findOne: jest.fn(), create: jest.fn(), findById: jest.fn() }));
+jest.mock('../src/utils/mailer', () => ({ sendMail: jest.fn() }));
+
 const {
   signAccessToken,
   signRefreshToken,
@@ -18,6 +24,9 @@ const authMiddleware = require('../src/middleware/auth.middleware');
 const { requireRole } = require('../src/middleware/auth.middleware');
 const authService = require('../src/modules/auth/auth.service');
 const ApiError = require('../src/utils/ApiError');
+const User = require('../src/models/User');
+const { sendMail } = require('../src/utils/mailer');
+const { welcomeEmailTemplate } = require('../src/utils/emailTemplates');
 
 // A fake user with the fields the token helpers read.
 const fakeUser = { _id: '507f1f77bcf86cd799439011', role: 'staff', email: 'u@example.com' };
@@ -178,5 +187,59 @@ describe('auth.service — validation paths (no DB access)', () => {
 
   it('logout is a safe no-op (resolves) when no token is provided', async () => {
     await expect(authService.logout()).resolves.toEqual({ success: true });
+  });
+});
+
+describe('register — welcome email (SendGrid via mailer.sendMail, best-effort)', () => {
+  // A stand-in for the freshly created User doc (register returns user.toJSON()).
+  const newUser = {
+    _id: 'u1',
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+    role: 'staff',
+    toJSON() {
+      return { _id: this._id, name: this.name, email: this.email, role: this.role };
+    },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    User.findOne.mockResolvedValue(null); // email not already taken
+    User.create.mockResolvedValue(newUser);
+  });
+
+  it('sends the welcome email with { to, subject, html } derived from welcomeEmailTemplate()', async () => {
+    sendMail.mockResolvedValue({ dryRun: true });
+
+    const result = await authService.register({
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+      password: 'password123',
+    });
+
+    expect(result.email).toBe('jane@example.com');
+    const expected = welcomeEmailTemplate(newUser);
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(sendMail).toHaveBeenCalledWith({
+      to: 'jane@example.com',
+      subject: expected.subject,
+      html: expected.html,
+    });
+    // Sanity: subject actually greets the user by name.
+    expect(expected.subject).toBe('Welcome to BillFlow, Jane Doe!');
+  });
+
+  it('still returns a successful registration when sendMail throws (never depends on email)', async () => {
+    sendMail.mockRejectedValue(new Error('SendGrid 503'));
+
+    const result = await authService.register({
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+      password: 'password123',
+    });
+
+    // Registration succeeded despite the email failure.
+    expect(result).toMatchObject({ email: 'jane@example.com', role: 'staff' });
+    expect(sendMail).toHaveBeenCalledTimes(1);
   });
 });
