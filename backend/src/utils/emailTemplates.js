@@ -144,4 +144,47 @@ function paymentReminderTemplate(invoice = {}, customer = {}) {
   };
 }
 
-module.exports = { invoiceSentTemplate, paymentReminderTemplate };
+module.exports = { invoiceSentTemplate, paymentReminderTemplate, welcomeEmailTemplate };
+
+/**
+ * Welcome email sent when a new user registers (Auth module). Confirms the account was created,
+ * echoes the registered email back, and invites them to log in.
+ * @param {{ name?: string, email?: string }} user  the newly created user
+ * @returns {{ subject: string, html: string, text: string }}
+ */
+function welcomeEmailTemplate(user = {}) {
+  const name = user.name || 'there';
+  const email = user.email || '';
+  const company = COMPANY_NAME();
+
+  const subject = user.name
+    ? `Welcome to ${company}, ${user.name}!`
+    : `Welcome to ${company}!`;
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px;font-size:14px;">Hi ${escapeHtml(name)},</p>
+    <p style="margin:0 0 12px;font-size:14px;">
+      Your ${escapeHtml(company)} account has been created successfully. Welcome aboard!
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0;font-size:14px;color:#374151;">
+      <tr>
+        <td style="padding:2px 16px 2px 0;color:#6b7280;">Registered email</td>
+        <td style="padding:2px 0;font-weight:bold;">${escapeHtml(email)}</td>
+      </tr>
+    </table>
+    <p style="margin:16px 0 0;font-size:14px;">
+      You can now log in with this email to start managing customers, invoices, and payments.
+    </p>`;
+
+  const text = [
+    `Hi ${name},`,
+    '',
+    `Your ${company} account has been created successfully. Welcome aboard!`,
+    '',
+    `Registered email: ${email}`,
+    '',
+    'You can now log in with this email to start managing customers, invoices, and payments.',
+  ].join('\n');
+
+  return { subject, html: layout({ heading: `Welcome to ${escapeHtml(company)}`, bodyHtml }), text };
+}

@@ -16,6 +16,8 @@ const crypto = require('crypto');
 const User = require('../../models/User');
 const RevokedToken = require('../../models/RevokedToken');
 const ApiError = require('../../utils/ApiError');
+const { sendMail } = require('../../utils/mailer');
+const { welcomeEmailTemplate } = require('../../utils/emailTemplates');
 const {
   signAccessToken,
   signRefreshToken,
@@ -58,16 +60,14 @@ async function register({ name, email, password } = {}) {
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
+  let user;
   try {
-    const user = await User.create({
+    user = await User.create({
       name,
       email: normalizedEmail,
       passwordHash,
       // role intentionally omitted → schema default 'staff'. Never trust a client-supplied role.
     });
-
-    // toJSON strips passwordHash/__v; return the safe representation.
-    return user.toJSON();
   } catch (err) {
     // Duplicate-key race: two concurrent registrations for the same email.
     if (err && err.code === 11000) {
@@ -75,6 +75,21 @@ async function register({ name, email, password } = {}) {
     }
     throw err;
   }
+
+  // Send the welcome email synchronously via SendGrid (utils/mailer.sendMail) — NOT via BullMQ, per
+  // our decision to keep auth/CRUD flows synchronous. This is BEST-EFFORT: registration must never
+  // depend on email delivery, so a SendGrid/network failure is caught and logged here and the user
+  // still gets a successful registration. No extra AuditLog entry — the welcome email is not a
+  // sensitive/financial action (the registration itself is what matters).
+  try {
+    const { subject, html } = welcomeEmailTemplate(user);
+    await sendMail({ to: user.email, subject, html });
+  } catch (err) {
+    console.error('[auth] failed to send welcome email (registration still succeeded):', err && err.message);
+  }
+
+  // toJSON strips passwordHash/__v; return the safe representation.
+  return user.toJSON();
 }
 
 /**
