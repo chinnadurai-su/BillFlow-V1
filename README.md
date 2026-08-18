@@ -11,7 +11,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-UNLICENSED-lightgrey">
 </p>
 
-BillFlow is a Chargebee-style billing system split into an **Angular 21 SPA** and a **Node.js + Express REST API** backed by **MongoDB Atlas** and a **Redis/BullMQ** job queue. It is designed around financial-grade correctness: every money-moving endpoint is idempotent, multi-collection writes are transactional, and sensitive operations are audit-logged.
+BillFlow is a Chargebee-style billing system split into an **Angular 21 SPA** and a **Node.js + Express REST API** backed by **MongoDB Atlas** and a **Redis/BullMQ** job queue. It is designed around financial-grade correctness: every money-moving endpoint is idempotent, multi-collection writes are transactional, and sensitive operations are audit-logged. 
 
 ---
 
@@ -61,7 +61,7 @@ See [`docs/BillFlow_Dev_Technical_Spec.md`](docs/BillFlow_Dev_Technical_Spec.md)
 - **Invoice generation** — manual and recurring invoices with line items, tax, and auto-generated human-readable invoice numbers (e.g. `INV-2026-0042`).
 - **PDF invoice export** — server-side rendering with PDFKit.
 - **Payment tracking & reconciliation** — record payments against invoices and update customer balances atomically.
-- **Automated email reminders** — recurring invoice generation and reminder emails via BullMQ workers + Nodemailer.
+- **Automated email reminders** — recurring invoice generation and reminder emails via BullMQ workers + SendGrid.
 - **Dashboard analytics** — revenue, outstanding, and overdue metrics with Chart.js visualizations.
 - **Audit logging** — before/after state captured for sensitive operations (never passwords or card data).
 - **Financial-grade correctness** — idempotent write endpoints, MongoDB transactions, JWT auth, centralized error handling, rate limiting, and pagination.
@@ -92,7 +92,7 @@ See [`docs/BillFlow_Dev_Technical_Spec.md`](docs/BillFlow_Dev_Technical_Spec.md)
                                             ┌──────────────▼───────────────┐
                                             │  Worker Process               │
                                             │  - PDFKit (generate PDF)      │
-                                            │  - Nodemailer (send email)    │
+                                            │  - SendGrid (send email)      │
                                             └───────────────────────────────┘
 ```
 
@@ -116,7 +116,7 @@ See [`docs/BillFlow_Dev_Technical_Spec.md`](docs/BillFlow_Dev_Technical_Spec.md)
 | Queue | **BullMQ 5** | Background jobs |
 | Queue broker | **Redis** (ioredis) | BullMQ backend |
 | PDF generation | **PDFKit** | Invoice PDFs |
-| Email | **Nodemailer** | Transactional + reminder emails |
+| Email | **SendGrid** (`@sendgrid/mail`) | Transactional + reminder emails |
 | Auth | **JWT** (jsonwebtoken) | Access (15 min) + refresh (7 days) |
 | Password hashing | **bcrypt** | |
 | Testing | **Jest** + **supertest** / **Angular TestBed** (Karma/Jasmine) | + `mongodb-memory-server` |
@@ -179,7 +179,7 @@ cd BillFlow
 cp .env.example backend/.env
 ```
 
-> ⚠️ **Never commit `.env`.** Keep real secrets (Mongo URI, JWT secrets, SMTP creds, `GITHUB_PERSONAL_ACCESS_TOKEN`) out of the repo.
+> ⚠️ **Never commit `.env`.** Keep real secrets (Mongo URI, JWT secrets, `SENDGRID_API_KEY`, `GITHUB_PERSONAL_ACCESS_TOKEN`) out of the repo.
 
 ### 2. Install dependencies
 
@@ -232,7 +232,8 @@ Defined in [`.env.example`](.env.example) (backend):
 | `JWT_REFRESH_SECRET` | Secret for signing refresh tokens | *(set)* |
 | `JWT_ACCESS_EXPIRY` | Access token lifetime | `15m` |
 | `JWT_REFRESH_EXPIRY` | Refresh token lifetime | `7d` |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Email (Nodemailer) config | |
+| `SENDGRID_API_KEY` | SendGrid API key (blank → dry-run, no send) | |
+| `EMAIL_FROM` | Verified SendGrid sender address | |
 | `CLIENT_URL` | Allowed CORS origin (frontend URL) | `https://billflow.netlify.app` |
 
 Frontend API base URLs live in [`frontend/src/environments/`](frontend/src/environments/).
@@ -352,7 +353,7 @@ Invoice created (isRecurring: true)
   → recurringInvoice.job scheduled with a cron pattern (per recurringCycle)
   → Worker picks the job at the scheduled time → creates a new Invoice
   → Queues invoiceReminder.job (PDF + email)
-  → invoice.worker.js generates the PDF (PDFKit) + sends email (Nodemailer)
+  → invoice.worker.js generates the PDF (PDFKit) + sends email (SendGrid)
 ```
 
 ---

@@ -10,7 +10,7 @@ Full spec reference: `docs/BillFlow_Dev_Technical_Spec.md`
 - **Database:** MongoDB Atlas + Mongoose ODM
 - **Queue:** BullMQ + Redis
 - **PDF:** PDFKit
-- **Email:** Nodemailer
+- **Email:** SendGrid (`@sendgrid/mail`)
 - **Deployment:** Frontend → Netlify, Backend → Render
 
 ## Coding Rules
