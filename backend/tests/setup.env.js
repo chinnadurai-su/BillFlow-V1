@@ -10,5 +10,3 @@ process.env.JWT_ACCESS_EXPIRY = '15m';
 process.env.JWT_REFRESH_EXPIRY = '7d';
 // Keep bcrypt fast in tests (cost 4) so the suite isn't dominated by hashing time.
 process.env.BCRYPT_SALT_ROUNDS = '4';
-// Disable BullMQ queueing in tests so job producers no-op instead of opening a Redis socket.
-process.env.QUEUE_DISABLED = '1';

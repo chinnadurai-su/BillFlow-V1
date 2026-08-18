@@ -1,44 +1,68 @@
-// notification.test.js — unit tests for the notification module + invoice job producers.
+// notification.test.js — unit tests for the synchronous notification service + email templates.
 //
-// The notification service is a THIN enqueue wrapper (real send happens in the worker, FR-4.3),
-// so these tests assert it enqueues the RIGHT job with the RIGHT retry policy. The BullMQ queue is
-// mocked, so no Redis/socket is needed and these always run.
+// notification.service now sends directly (SendGrid via utils/mailer) — no queue. We mock the mailer
+// and the models so these run socket-free (no DB, no network) and assert the right message is built.
 
-// Mock the shared queue so addInvoiceJob is observable and never touches Redis. (Hoisted.)
-jest.mock('../src/jobs/invoiceQueue', () => ({
-  addInvoiceJob: jest.fn().mockResolvedValue({ id: 'job-1' }),
-  getInvoiceQueue: jest.fn(),
-  INVOICE_QUEUE_NAME: 'invoiceJobs',
-}));
+// Mock the mailer so no network/SDK is needed and the composed message is observable. (Hoisted.)
+jest.mock('../src/utils/mailer', () => ({ sendMail: jest.fn().mockResolvedValue({ dryRun: true }) }));
+// Mock the models so notification.service can load an invoice + customer without a DB. (Hoisted.)
+jest.mock('../src/models/Invoice', () => ({ findById: jest.fn() }));
+jest.mock('../src/models/Customer', () => ({ findById: jest.fn() }));
 
-const { addInvoiceJob } = require('../src/jobs/invoiceQueue');
+const { sendMail } = require('../src/utils/mailer');
+const Invoice = require('../src/models/Invoice');
+const Customer = require('../src/models/Customer');
 const notificationService = require('../src/modules/notification/notification.service');
-const { RETRY_OPTS } = require('../src/jobs/invoiceReminder.job');
 
-beforeEach(() => jest.clearAllMocks());
+// Build a Mongoose-ish doc whose toObject() returns the given plain object.
+const doc = (obj) => ({ ...obj, toObject: () => obj });
 
-describe('notification.service (thin enqueue wrapper, FR-4.1–4.3)', () => {
-  it('sendInvoiceReminder enqueues a "sendReminder" job with the 3-attempt backoff policy', async () => {
+const invoiceObj = {
+  _id: 'inv-1',
+  invoiceNumber: 'INV-2026-0001',
+  customerId: 'cust-1',
+  items: [{ description: 'x', quantity: 1, unitPrice: 100, total: 100 }],
+  subtotal: 100, tax: 0, totalAmount: 100,
+  status: 'sent',
+  dueDate: new Date('2026-01-01T00:00:00Z'),
+};
+const customerObj = { _id: 'cust-1', name: 'Acme', email: 'billing@acme.test' };
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  Invoice.findById.mockResolvedValue(doc(invoiceObj));
+  Customer.findById.mockResolvedValue(doc(customerObj));
+});
+
+describe('notification.service — synchronous sends (FR-4.1/4.2)', () => {
+  it('sendInvoiceEmail renders a PDF and emails it to the customer with the PDF attached', async () => {
+    await notificationService.sendInvoiceEmail('inv-1');
+
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    const msg = sendMail.mock.calls[0][0];
+    expect(msg.to).toBe('billing@acme.test');
+    expect(msg.subject).toContain('INV-2026-0001');
+    expect(msg.html).toEqual(expect.any(String));
+    // PDF attached as a Buffer named after the invoice number.
+    expect(msg.attachments).toHaveLength(1);
+    expect(msg.attachments[0].filename).toBe('INV-2026-0001.pdf');
+    expect(Buffer.isBuffer(msg.attachments[0].content)).toBe(true);
+    expect(msg.attachments[0].content.subarray(0, 4).toString('ascii')).toBe('%PDF');
+  });
+
+  it('sendInvoiceReminder emails the reminder (no attachment)', async () => {
     await notificationService.sendInvoiceReminder('inv-1');
-    expect(addInvoiceJob).toHaveBeenCalledWith(
-      'sendReminder',
-      { invoiceId: 'inv-1' },
-      expect.objectContaining({ attempts: 3, backoff: { type: 'exponential', delay: 5000 } })
-    );
+
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    const msg = sendMail.mock.calls[0][0];
+    expect(msg.to).toBe('billing@acme.test');
+    expect(msg.subject.toLowerCase()).toContain('invoice');
+    expect(msg.attachments).toBeUndefined();
   });
 
-  it('sendInvoiceEmail enqueues a "generatePDF" job (PDF + email flow, FR-4.2)', async () => {
-    await notificationService.sendInvoiceEmail('inv-2');
-    expect(addInvoiceJob).toHaveBeenCalledWith(
-      'generatePDF',
-      { invoiceId: 'inv-2' },
-      expect.objectContaining({ attempts: 3 })
-    );
-  });
-
-  it('the retry policy matches Spec 7.6 (3 attempts, exponential backoff from 5s)', () => {
-    expect(RETRY_OPTS.attempts).toBe(3);
-    expect(RETRY_OPTS.backoff).toEqual({ type: 'exponential', delay: 5000 });
+  it('throws when the invoice does not exist (caller treats sending as best-effort)', async () => {
+    Invoice.findById.mockResolvedValue(null);
+    await expect(notificationService.sendInvoiceEmail('missing')).rejects.toThrow(/not found/i);
   });
 });
 

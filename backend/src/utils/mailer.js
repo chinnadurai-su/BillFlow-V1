@@ -1,7 +1,7 @@
 // mailer.js — the single place that owns outbound email delivery (SendGrid, @sendgrid/mail).
 //
-// Only the worker (workers/invoice.worker.js) actually sends; centralizing here means the provider
-// and its config live in one place while the transport-agnostic sendMail({to, subject, html, text,
+// Sends are triggered synchronously from modules/notification/notification.service.js; centralizing
+// transport here means the provider and its config live in one place while the transport-agnostic sendMail({to, subject, html, text,
 // attachments}) interface stays stable — swapping providers never touches callers.
 //
 // IMPORT-SAFE: @sendgrid/mail is required LAZILY inside the send path, only when SENDGRID_API_KEY is

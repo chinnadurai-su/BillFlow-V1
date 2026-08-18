@@ -1,8 +1,10 @@
 // server.js — Backend entry point: creates the Express app, wires middleware/routes, and starts the API.
 //
 // Purpose (see Spec Section 3 / 8): bootstraps the Express REST API, connects to MongoDB (config/db),
-// mounts module routers (auth, customer, invoice, payment), request logging (morgan), CORS, and the
-// centralized error handler. Notification is worker-triggered and has no router (see module comment).
+// mounts module routers (auth, customer, invoice, payment, dashboard), request logging (morgan),
+// CORS, and the centralized error handler. On startup it also registers three daily node-cron jobs
+// (recurring-invoice generation, overdue flagging, payment reminders) — the app is fully synchronous;
+// there is no queue/worker (deliberate simplicity choice, see Spec Section 7).
 
 // Env vars live in backend/environment/.env — load via an absolute path so it works
 // regardless of the process working directory (server, worker, seed, tests).
@@ -66,14 +68,25 @@ async function start() {
     // Don't exit — the server stays up; DB-backed endpoints will error until it connects.
   }
 
-  // Register the repeatable daily overdue-check job (BR-4 / Spec §9). Best-effort: if Redis is
-  // unavailable, log and continue — the API must not fail to boot just because the queue is down.
+  // Register the three daily maintenance jobs with node-cron (BR-3/BR-4/FR-4.1). Required lazily so
+  // importing this module (e.g. in tests) never needs node-cron installed. All run at 00:00 daily.
   try {
-    const { registerOverdueCheck } = require('./jobs/overdueCheck.job');
-    await registerOverdueCheck();
-    console.log('[server] overdue-check job registered');
+    const cron = require('node-cron');
+    const { recurringInvoiceCheck } = require('./jobs/recurringInvoiceCheck');
+    const { overdueCheck } = require('./jobs/overdueCheck');
+    const { reminderCheck } = require('./jobs/reminderCheck');
+
+    // Wrap each so a thrown error is logged, not left as an unhandled rejection.
+    const run = (name, fn) => () => Promise.resolve()
+      .then(fn)
+      .catch((err) => console.error(`[cron] ${name} failed:`, err && err.message));
+
+    cron.schedule('0 0 * * *', run('recurringInvoiceCheck', recurringInvoiceCheck));
+    cron.schedule('0 0 * * *', run('overdueCheck', overdueCheck));
+    cron.schedule('0 0 * * *', run('reminderCheck', reminderCheck));
+    console.log('[server] scheduled daily cron jobs: recurring, overdue, reminder');
   } catch (err) {
-    console.error('[server] failed to register overdue-check job:', err.message);
+    console.error('[server] failed to schedule cron jobs:', err.message);
   }
 }
 

@@ -152,7 +152,7 @@ This document defines the business requirements that guide functional scope, use
 - Single currency (INR or USD, to be fixed per deployment) — no multi-currency conversion
 
 ### Constraints
-- Must run on free/low-cost infrastructure tiers suitable for a solo-developer project (Netlify, Render, MongoDB Atlas free tier, Redis free tier)
+- Must run on free/low-cost infrastructure tiers suitable for a solo-developer project (Netlify, Render, MongoDB Atlas free tier)
 - Development timeline driven by a single developer working part-time alongside other commitments
 
 ---

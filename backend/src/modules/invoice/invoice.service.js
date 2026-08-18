@@ -21,13 +21,34 @@ const withTransaction = require('../../utils/withTransaction');
 const { writeAudit } = require('../../utils/audit');
 const { parsePagination, paginatedResult } = require('../../utils/pagination');
 const { renderInvoicePdf } = require('../../utils/pdfGenerator');
-const { scheduleRecurringInvoice, cycleToDelayMs } = require('../../jobs/recurringInvoice.job');
 const notificationService = require('../notification/notification.service');
 
 const VALID_CYCLES = ['monthly', 'quarterly', 'yearly'];
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Round to 2 decimals to avoid floating-point drift in money math.
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+
+/**
+ * Map a recurring cycle to an approximate interval in milliseconds. Used to compute an occurrence's
+ * due date and the source template's next-generation date. Pure → unit-testable. (Fixed-day
+ * approximation — monthly ≈ 30d — is fine for this learning project; exact calendar cadence would
+ * need a date library.)
+ * @param {'monthly'|'quarterly'|'yearly'} cycle
+ * @returns {number} interval in ms
+ */
+function cycleToDelayMs(cycle) {
+  switch (cycle) {
+    case 'monthly':
+      return 30 * DAY_MS;
+    case 'quarterly':
+      return 91 * DAY_MS; // ~3 months
+    case 'yearly':
+      return 365 * DAY_MS;
+    default:
+      throw new Error(`Unknown recurringCycle: ${cycle}`);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Pure helpers (no DB) — exported for unit testing.
@@ -165,6 +186,9 @@ async function create(input = {}, userId) {
           dueDate: dueDate ? new Date(dueDate) : undefined,
           isRecurring: Boolean(isRecurring),
           recurringCycle: isRecurring ? recurringCycle : null,
+          // When recurring, record when the next occurrence should be generated. The daily
+          // recurringInvoiceCheck cron (jobs/recurringInvoiceCheck.js) queries this (FR-2.5).
+          nextRecurrenceAt: isRecurring ? new Date(Date.now() + cycleToDelayMs(recurringCycle)) : undefined,
           idempotencyKey: idempotencyKey || undefined,
         }],
         { session }
@@ -189,12 +213,6 @@ async function create(input = {}, userId) {
 
       return created;
     });
-
-    // Post-commit side effect: schedule the next recurring cycle (FR-2.5). Best-effort — a
-    // scheduling failure must not undo the already-committed invoice.
-    if (invoice.isRecurring && invoice.recurringCycle) {
-      await safeSchedule(invoice._id, invoice.recurringCycle);
-    }
 
     return invoice;
   } catch (err) {
@@ -329,8 +347,9 @@ async function cancel(id, userId) {
 }
 
 /**
- * Mark an invoice as "sent" (if it was a draft) and enqueue the PDF+email job (FR-2.7 / FR-4.2).
- * Email delivery is async (worker); enqueue failures are logged, not fatal.
+ * Mark an invoice as "sent" (if it was a draft) and send the PDF+email directly (FR-2.7 / FR-4.2).
+ * The email is sent SYNCHRONOUSLY but best-effort: a delivery failure is caught and logged so the
+ * send action (and the status change) still succeeds.
  */
 async function sendInvoice(id, userId) {
   const invoice = await withTransaction(async (session) => {
@@ -357,19 +376,19 @@ async function sendInvoice(id, userId) {
     return inv;
   });
 
-  // Enqueue PDF generation + email (async). Best-effort so a Redis hiccup doesn't fail the request.
+  // Generate the PDF + email it now (synchronous). Best-effort: email failure must not fail the send.
   try {
     await notificationService.sendInvoiceEmail(invoice._id);
   } catch (err) {
-    console.error('[invoice] failed to enqueue invoice email:', err && err.message);
+    console.error('[invoice] failed to send invoice email:', err && err.message);
   }
   return invoice;
 }
 
 /**
- * Manually enqueue a payment reminder for an invoice (FR-4.1, manual trigger). Validates the
- * invoice is in a remindable state (not paid/cancelled). Delivery is async (worker). Records
- * lastReminderAt so the automatic upcoming-due sweep won't immediately re-remind.
+ * Send a payment reminder for an invoice (FR-4.1, manual trigger). Validates the invoice is in a
+ * remindable state (not paid/cancelled), sends the reminder email directly (best-effort), and
+ * records lastReminderAt so the daily reminder sweep won't immediately re-remind.
  * @param {string} id
  */
 async function remind(id) {
@@ -387,7 +406,7 @@ async function remind(id) {
     invoice.lastReminderAt = new Date();
     await invoice.save();
   } catch (err) {
-    console.error('[invoice] failed to enqueue reminder:', err && err.message);
+    console.error('[invoice] failed to send reminder:', err && err.message);
   }
   return invoice;
 }
@@ -404,28 +423,32 @@ async function getInvoicePdf(id) {
 }
 
 /**
- * Create the next occurrence of a recurring invoice (called by the worker). Implements BR-3:
- * stops (returns null) if the source is no longer recurring, is cancelled, or the customer is
- * archived. The occurrence itself is NOT marked recurring — the source template remains the anchor.
+ * Create the next occurrence of a recurring invoice. Called by the daily recurringInvoiceCheck cron
+ * (jobs/recurringInvoiceCheck.js), not by an HTTP route. Implements BR-3: returns null (no occurrence)
+ * if the source is no longer recurring, is cancelled, or the customer is archived. The occurrence
+ * itself is a concrete invoice (isRecurring:false); the source template stays the schedule anchor and
+ * has its nextRecurrenceAt advanced by one cycle — all inside ONE transaction so generation and the
+ * schedule advance commit together (no double-generation on a re-run).
  *
- * Idempotent: pass a deterministic idempotencyKey (e.g. the BullMQ job id) so a worker RETRY after
- * the transaction already committed does not create a duplicate occurrence / double-charge the
- * balance — the unique idempotencyKey index rejects the second insert and we return the existing one.
+ * Idempotent: an optional idempotencyKey is stored on the occurrence (unique index) so a duplicate
+ * call with the same key returns the existing occurrence instead of creating another.
  * @param {string} sourceInvoiceId
  * @param {string} [idempotencyKey]
  */
 async function createRecurringOccurrence(sourceInvoiceId, idempotencyKey) {
-  const source = await Invoice.findById(sourceInvoiceId);
-  if (!source || !source.isRecurring || !source.recurringCycle) return null; // BR-3 stop
-  if (source.status === 'cancelled') return null; // a cancelled source stops the series (BR-3)
-  const customer = await Customer.findById(source.customerId);
-  if (!customer || customer.status === 'archived') return null; // BR-3 stop
-
   const now = new Date();
   const year = now.getUTCFullYear();
 
   try {
     return await withTransaction(async (session) => {
+      // Re-read the source inside the transaction and re-check BR-3 stop conditions, so a concurrent
+      // cancel/flag-off/archive between the cron's query and here can't cause a stray occurrence.
+      const source = await Invoice.findById(sourceInvoiceId).session(session);
+      if (!source || !source.isRecurring || !source.recurringCycle) return null;
+      if (source.status === 'cancelled') return null;
+      const customer = await Customer.findById(source.customerId).session(session);
+      if (!customer || customer.status === 'archived') return null;
+
       const seq = await Counter.next(`invoice-${year}`, session);
       const invoiceNumber = formatInvoiceNumber(year, seq);
       const dueDate = new Date(now.getTime() + cycleToDelayMs(source.recurringCycle));
@@ -453,6 +476,13 @@ async function createRecurringOccurrence(sourceInvoiceId, idempotencyKey) {
         { session }
       );
 
+      // Advance the source template's next-generation date by one cycle (atomic with creation).
+      await Invoice.updateOne(
+        { _id: source._id },
+        { nextRecurrenceAt: new Date(now.getTime() + cycleToDelayMs(source.recurringCycle)) },
+        { session }
+      );
+
       await writeAudit({
         action: 'INVOICE_CREATED',
         entityType: 'Invoice',
@@ -465,7 +495,7 @@ async function createRecurringOccurrence(sourceInvoiceId, idempotencyKey) {
       return created;
     });
   } catch (err) {
-    // Retry after a prior commit: the occurrence already exists for this idempotencyKey.
+    // Duplicate call with the same idempotencyKey: the occurrence already exists.
     if (err && err.code === 11000 && err.keyPattern && err.keyPattern.idempotencyKey && idempotencyKey) {
       const existing = await Invoice.findOne({ idempotencyKey });
       if (existing) return existing;
@@ -474,19 +504,12 @@ async function createRecurringOccurrence(sourceInvoiceId, idempotencyKey) {
   }
 }
 
-// Best-effort recurring scheduler (swallows Redis errors — invoice is already committed).
-async function safeSchedule(invoiceId, cycle) {
-  try {
-    await scheduleRecurringInvoice(invoiceId, cycle);
-  } catch (err) {
-    console.error('[invoice] failed to schedule recurring job:', err && err.message);
-  }
-}
-
 module.exports = {
   // pure helpers (unit-tested)
   computeTotals,
   formatInvoiceNumber,
+  cycleToDelayMs,
+  DAY_MS,
   // service
   list,
   getById,

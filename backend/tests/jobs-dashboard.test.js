@@ -1,9 +1,11 @@
-// jobs-dashboard.test.js — DB-backed tests for the overdue-check job (BR-4), recurring invoice
-// occurrence generation (BR-3), and dashboard aggregations (FR-5.1/5.2).
+// jobs-dashboard.test.js — DB-backed tests for the daily node-cron checks (overdue BR-4, recurring
+// BR-3, reminders FR-4.1) and dashboard aggregations (FR-5.1/5.2).
 //
 // Requires a real Mongo replica set (transactions). Skipped where unavailable via BILLFLOW_SKIP_DB_TESTS=1.
 
-const { flagOverdueInvoices, remindUpcomingInvoices } = require('../src/jobs/overdueCheck.job');
+const { overdueCheck } = require('../src/jobs/overdueCheck');
+const { reminderCheck } = require('../src/jobs/reminderCheck');
+const { recurringInvoiceCheck } = require('../src/jobs/recurringInvoiceCheck');
 const notificationService = require('../src/modules/notification/notification.service');
 const invoiceService = require('../src/modules/invoice/invoice.service');
 const dashboardService = require('../src/modules/dashboard/dashboard.service');
@@ -14,10 +16,10 @@ const { connectReplSet, clearDatabase, closeDatabase } = require('./helpers/db')
 
 const describeDb = process.env.BILLFLOW_SKIP_DB_TESTS ? describe.skip : describe;
 
-describeDb('overdue-check job (BR-4)', () => {
+describeDb('overdueCheck cron (BR-4)', () => {
   let customer;
   beforeAll(async () => { await connectReplSet(); });
-  afterEach(async () => { await clearDatabase(); });
+  afterEach(async () => { jest.restoreAllMocks(); await clearDatabase(); });
   afterAll(async () => { await closeDatabase(); });
   beforeEach(async () => { customer = await Customer.create({ name: 'C', email: 'c@t.com' }); });
 
@@ -41,7 +43,7 @@ describeDb('overdue-check job (BR-4)', () => {
     await makeInvoice('draft', past); // draft not flagged
     await makeInvoice('paid', past); // paid not flagged
 
-    const flagged = await flagOverdueInvoices(now);
+    const flagged = await overdueCheck(now);
     expect(flagged).toBe(1);
 
     const fresh = await Invoice.findById(sentPastDue._id);
@@ -51,22 +53,11 @@ describeDb('overdue-check job (BR-4)', () => {
 
   it('is a no-op when nothing is past due', async () => {
     await makeInvoice('sent', future);
-    expect(await flagOverdueInvoices(now)).toBe(0);
-  });
-
-  it('enqueues an overdue reminder email for each flagged invoice (FR-4.1)', async () => {
-    const spy = jest.spyOn(notificationService, 'sendInvoiceReminder').mockResolvedValue(null);
-    const sentPastDue = await makeInvoice('sent', past);
-
-    await flagOverdueInvoices(now);
-
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(String(spy.mock.calls[0][0])).toBe(String(sentPastDue._id));
-    spy.mockRestore();
+    expect(await overdueCheck(now)).toBe(0);
   });
 });
 
-describeDb('upcoming-due reminders (FR-4.1)', () => {
+describeDb('reminderCheck cron (FR-4.1)', () => {
   let customer;
   beforeAll(async () => { await connectReplSet(); });
   afterEach(async () => { jest.restoreAllMocks(); await clearDatabase(); });
@@ -76,6 +67,7 @@ describeDb('upcoming-due reminders (FR-4.1)', () => {
   const now = new Date('2026-06-01T00:00:00Z');
   const inTwoDays = new Date('2026-06-03T00:00:00Z');
   const inTenDays = new Date('2026-06-11T00:00:00Z');
+  const past = new Date('2026-05-20T00:00:00Z');
 
   function makeInvoice(status, dueDate) {
     return Invoice.create({
@@ -86,25 +78,63 @@ describeDb('upcoming-due reminders (FR-4.1)', () => {
     });
   }
 
-  it('reminds sent invoices due within the window, once each (guarded by lastReminderAt)', async () => {
+  it('reminds approaching + past-due unpaid invoices, respecting the cooldown', async () => {
     const spy = jest.spyOn(notificationService, 'sendInvoiceReminder').mockResolvedValue(null);
-    const soon = await makeInvoice('sent', inTwoDays);
-    await makeInvoice('sent', inTenDays); // outside the 3-day window
+    await makeInvoice('sent', inTwoDays); // approaching → remind
+    await makeInvoice('overdue', past); // past due → remind
+    await makeInvoice('sent', inTenDays); // outside window → skip
+    await makeInvoice('paid', past); // paid → skip
 
-    const first = await remindUpcomingInvoices(now, 3);
-    expect(first).toBe(1);
-    expect(spy).toHaveBeenCalledTimes(1);
+    const first = await reminderCheck(now);
+    expect(first).toBe(2);
+    expect(spy).toHaveBeenCalledTimes(2);
 
-    // lastReminderAt now set → a second run does NOT re-remind.
-    const second = await remindUpcomingInvoices(now, 3);
+    // Reminded just now → the cooldown suppresses an immediate re-run.
+    const second = await reminderCheck(now);
     expect(second).toBe(0);
-
-    const fresh = await Invoice.findById(soon._id);
-    expect(fresh.lastReminderAt).not.toBeNull();
-    spy.mockRestore();
   });
 });
 
+describeDb('recurringInvoiceCheck cron (BR-3 / FR-2.5)', () => {
+  let customer;
+  beforeAll(async () => { await connectReplSet(); });
+  afterEach(async () => { jest.restoreAllMocks(); await clearDatabase(); });
+  afterAll(async () => { await closeDatabase(); });
+  beforeEach(async () => { customer = await Customer.create({ name: 'C', email: 'c@t.com' }); });
+
+  it('generates an occurrence for a template whose nextRecurrenceAt has passed, and advances it', async () => {
+    jest.spyOn(notificationService, 'sendInvoiceEmail').mockResolvedValue(null); // skip real send
+    const now = new Date('2026-06-01T00:00:00Z');
+
+    const source = await invoiceService.create(
+      { customerId: customer._id, items: [{ description: 'Sub', quantity: 1, unitPrice: 100 }], isRecurring: true, recurringCycle: 'monthly' },
+      'u'
+    );
+    // Make it due.
+    await Invoice.updateOne({ _id: source._id }, { nextRecurrenceAt: new Date('2026-05-01T00:00:00Z') });
+
+    const generated = await recurringInvoiceCheck(now);
+    expect(generated).toBe(1);
+
+    // One concrete occurrence created (isRecurring:false, status sent).
+    const occurrences = await Invoice.find({ customerId: customer._id, isRecurring: false });
+    expect(occurrences).toHaveLength(1);
+    expect(occurrences[0].status).toBe('sent');
+
+    // The template's nextRecurrenceAt advanced into the future.
+    const fresh = await Invoice.findById(source._id);
+    expect(fresh.nextRecurrenceAt.getTime()).toBeGreaterThan(now.getTime());
+  });
+
+  it('does not generate for a template that is not yet due', async () => {
+    jest.spyOn(notificationService, 'sendInvoiceEmail').mockResolvedValue(null);
+    await invoiceService.create(
+      { customerId: customer._id, items: [{ description: 'Sub', quantity: 1, unitPrice: 100 }], isRecurring: true, recurringCycle: 'monthly' },
+      'u'
+    ); // nextRecurrenceAt ~30d out (future)
+    expect(await recurringInvoiceCheck(new Date('2026-06-01T00:00:00Z'))).toBe(0);
+  });
+});
 
 describeDb('recurring invoice occurrence (BR-3)', () => {
   let customer;
