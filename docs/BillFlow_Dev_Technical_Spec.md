@@ -1,23 +1,31 @@
 # BillFlow — Development Technical Specification
 
-**Version:** 4.0 (Final — Architecture + Patterns + MCP + Subagents + Skills + Hooks, fully consolidated)
+**Version:** 5.0 (Implementation-aligned — rewritten from the current codebase)
+**Last updated:** 2026-08-18
 **Type:** SaaS Billing & Invoicing Platform
 **Domain Model:** Subscription/Invoice management (Chargebee-style)
+
+> This spec describes what is **actually implemented** in the repository today. Business-level
+> requirements live in [`BillFlow_BRD.md`](./BillFlow_BRD.md); design-decision rationale and
+> trade-offs live in [`INTERVIEW_NOTES.md`](./INTERVIEW_NOTES.md).
 
 ---
 
 ## 1. System Overview
 
-BillFlow is a full-stack SaaS billing platform that lets businesses manage customers, generate invoices, track payments, and automate recurring billing reminders.
+BillFlow is a full-stack SaaS billing platform: businesses manage customers, generate invoices
+(manual + recurring), track payments, and automate overdue flagging and reminder emails — with
+financial-grade correctness (idempotency, transactions, audit logging) built in.
 
-### 1.1 Core Capabilities
-- Customer management (CRUD)
-- Invoice generation (manual + recurring)
-- PDF invoice export
-- Payment tracking & reconciliation
-- Automated email reminders
-- Dashboard analytics (revenue, outstanding, overdue)
-- Audit logging for compliance
+### 1.1 Core Capabilities (all implemented)
+- Customer management (CRUD + soft archive, running outstanding balance)
+- Invoice generation (manual + recurring), server-computed totals, auto invoice numbers
+- PDF invoice export (PDFKit)
+- Payment recording & reconciliation (auto invoice→paid, balance updates)
+- Automated overdue flagging + reminder emails (BullMQ + SendGrid)
+- "Registration Successful" welcome email on sign-up
+- Dashboard analytics (revenue, outstanding, overdue) via MongoDB aggregation
+- Role-based access (Admin / Staff) + audit logging for compliance
 
 ---
 
@@ -25,670 +33,441 @@ BillFlow is a full-stack SaaS billing platform that lets businesses manage custo
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Frontend Framework | Angular 21 | Standalone Components, Signals |
-| State Management | NgRx | For shared/global state |
-| Backend Runtime | Node.js | LTS version |
-| Backend Framework | Express.js | REST API |
-| Database | MongoDB Atlas | Document store |
-| ODM | Mongoose | Schema validation, transactions |
-| Queue | BullMQ | Job processing |
-| Queue Broker | Redis | BullMQ backend |
-| Charts | Chart.js | Dashboard visualizations |
-| PDF Generation | PDFKit | Invoice PDFs |
-| Email | SendGrid (`@sendgrid/mail`) | Transactional + reminder emails | 
-| Auth | JWT | Access + refresh token pattern |
-| Frontend Hosting | Netlify | CI/CD via Git |
-| Backend Hosting | Render | Node web service |
+| Frontend framework | Angular 21 | Standalone components + Signals (no NgModules) |
+| Shared state | NgRx | Auth state only; component-local state uses Signals |
+| Charts | Chart.js | Dashboard revenue trend |
+| Backend runtime | Node.js ≥ 20 | (dev/test run on Node 24) |
+| Backend framework | Express.js 4 | REST API, feature-module layout |
+| Database | MongoDB Atlas | Replica set (required for transactions) |
+| ODM | Mongoose 8 | Schema validation + multi-document transactions |
+| Queue | BullMQ 5 | Background jobs (PDF, email, recurring, overdue) |
+| Queue broker | Redis (ioredis) | BullMQ backend only — not a cache |
+| PDF generation | PDFKit | Invoice PDFs (returned as a Buffer) |
+| Email | **SendGrid** (`@sendgrid/mail`) | Transactional + reminder emails (dry-run when no key) |
+| Auth | JWT (jsonwebtoken) | Access (15 min) + refresh (7 days, httpOnly cookie) |
+| Password hashing | bcrypt | `select: false` password hash |
+| Testing (BE) | Jest + supertest + `mongodb-memory-server` | Socket-free unit + DB-backed integration |
+| Testing (FE) | Angular TestBed (Karma + Jasmine) | Component/service specs |
+| Hosting | Netlify (frontend) / Render (backend) | CI/CD via Git |
 
 ---
 
 ## 3. High-Level Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                         CLIENT (Browser)                        │
-│              Angular 21 SPA — Standalone + Signals               │
-└──────────────────────────────┬───────────────────────────────────┘
-                                │ HTTPS / REST (JSON)
-┌──────────────────────────────▼───────────────────────────────────┐
-│                     Node.js + Express API Layer                  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐ │
-│  │   Auth   │ │ Customer │ │ Invoice  │ │ Payment  │ │  Notify │ │
-│  │  Module  │ │  Module  │ │  Module  │ │  Module  │ │ Module  │ │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └─────────┘ │
-└───────┬──────────────────────────────────────────┬───────────────┘
-        │                                            │
-┌───────▼────────┐                          ┌────────▼─────────┐
-│  MongoDB Atlas  │                          │   Redis + BullMQ  │
-│  (Mongoose ODM) │                          │   (Job Queue)     │
-└─────────────────┘                          └────────┬─────────┘
-                                                        │
-                                          ┌─────────────▼──────────────┐
-                                          │  Worker Process             │
-                                          │  - PDFKit (generate PDF)    │
-                                          │  - SendGrid (send email)    │
-                                          └─────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                         CLIENT (Browser)                           │
+│              Angular 21 SPA — Standalone + Signals + NgRx          │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │ HTTPS / REST (JSON) — Bearer access token
+                               │ + httpOnly refresh cookie
+┌──────────────────────────────▼─────────────────────────────────────┐
+│                     Node.js + Express API Layer                     │
+│  auth ─ middleware(auth/idempotency/error) ─ customer ─ invoice ─   │
+│  payment ─ dashboard ─ notification(thin) ─ utils ─ jobs(producers) │
+└───────┬───────────────────────────────────────────┬────────────────┘
+        │                                             │ enqueue
+┌───────▼────────┐                          ┌─────────▼──────────┐
+│  MongoDB Atlas  │                          │   Redis + BullMQ   │
+│  (Mongoose ODM) │◄────── worker writes ────│   queue: invoiceJobs│
+└─────────────────┘                          └─────────┬──────────┘
+                                                        │ consume
+                                       ┌────────────────▼─────────────────┐
+                                       │  Worker Process (npm run worker)  │
+                                       │  generatePDF  → PDFKit + SendGrid │
+                                       │  sendReminder → SendGrid          │
+                                       │  createRecurringInvoice → clone   │
+                                       │  overdueCheck → flag + remind     │
+                                       └───────────────────────────────────┘
 ```
+
+- **API server** handles synchronous REST. Slow/scheduled work (PDF, email, recurring, overdue) is
+  offloaded to a **separate worker process** via Redis/BullMQ so responses never block (BRD FR-4.3).
+- **Frontend state split:** access token in an Angular Signal (+ localStorage); current user in NgRx;
+  component-local UI (forms, computed totals) in Signals.
 
 ---
 
-## 4. Folder Structure
+## 4. Folder Structure (current)
 
 ```
 BillFlow/
-├── .claude/
-│   ├── CLAUDE.md                      # Project rules for Claude Code
-│   ├── agents/
-│   │   ├── frontend-agent.md
-│   │   ├── backend-agent.md
-│   │   ├── testing-agent.md
-│   │   └── reviewer-agent.md
-│   └── skills/
-│       └── idempotent-endpoint/
-│           └── SKILL.md
-├── .mcp.json                          # GitHub / Render / Netlify MCP config
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── core/                 # Guards, interceptors, services (singleton)
-│   │   │   ├── shared/                # Reusable components, pipes, directives
-│   │   │   ├── features/
-│   │   │   │   ├── auth/
-│   │   │   │   ├── customers/
-│   │   │   │   ├── invoices/
-│   │   │   │   ├── payments/
-│   │   │   │   └── dashboard/
-│   │   │   ├── store/                 # NgRx: actions, reducers, effects, selectors
-│   │   │   └── app.config.ts
-│   │   └── environments/
-│   └── angular.json
+├── .claude/                              # AI-assisted dev config (agents, skills, CLAUDE.md)
+├── docs/                                 # BRD, this spec, INTERVIEW_NOTES
+├── README.md
 │
 ├── backend/
-│   ├── src/
-│   │   ├── modules/
-│   │   │   ├── auth/
-│   │   │   │   ├── auth.controller.js
-│   │   │   │   ├── auth.service.js
-│   │   │   │   └── auth.routes.js
-│   │   │   ├── customer/
-│   │   │   ├── invoice/
-│   │   │   ├── payment/
-│   │   │   └── notification/
-│   │   ├── models/                    # Mongoose schemas
-│   │   │   ├── Customer.js
-│   │   │   ├── Invoice.js
-│   │   │   ├── Payment.js
-│   │   │   ├── AuditLog.js
-│   │   │   ├── IdempotencyKey.js
-│   │   │   └── User.js
-│   │   ├── middleware/
-│   │   │   ├── auth.middleware.js
-│   │   │   ├── idempotency.middleware.js
-│   │   │   └── errorHandler.js
-│   │   ├── jobs/                      # BullMQ job definitions
-│   │   │   ├── invoiceReminder.job.js
-│   │   │   └── recurringInvoice.job.js
-│   │   ├── workers/                   # BullMQ worker processes
-│   │   │   └── invoice.worker.js
-│   │   ├── utils/
-│   │   │   ├── pdfGenerator.js
-│   │   │   └── emailTemplates.js
-│   │   ├── config/
-│   │   │   ├── db.js
-│   │   │   └── redis.js
-│   │   └── server.js
-│   └── package.json
+│   ├── environment/                      # .env (git-ignored) + .env.example
+│   ├── jest.config.js
+│   └── src/
+│       ├── config/                       # db.js (Mongoose), redis.js (shared ioredis)
+│       ├── middleware/                   # auth.middleware, idempotency.middleware, errorHandler
+│       ├── models/                       # User, Customer, Invoice, Payment, AuditLog,
+│       │                                 #   IdempotencyKey, Counter, RevokedToken
+│       ├── modules/
+│       │   ├── auth/                      # controller / service / routes
+│       │   ├── customer/
+│       │   ├── invoice/
+│       │   ├── payment/
+│       │   ├── dashboard/                # summary + revenue-trend (aggregation)
+│       │   └── notification/             # thin enqueue wrapper (no HTTP routes)
+│       ├── jobs/                         # invoiceQueue, invoiceReminder, recurringInvoice, overdueCheck
+│       ├── workers/                      # invoice.worker.js (BullMQ consumer)
+│       ├── utils/                        # tokens, ApiError, mailer(SendGrid), emailTemplates,
+│       │                                 #   pdfGenerator, audit, withTransaction, pagination, format
+│       └── server.js
 │
-├── docs/
-│   └── BillFlow_Dev_Technical_Spec.md
-├── tests/
-│   ├── frontend/
-│   └── backend/
-├── docker/
-└── .env.example
+├── backend/tests/                        # Jest: *.unit.test.js (socket-free) + *.test.js (DB-backed)
+│   ├── setup.env.js, jest.config.js, helpers/{db,authApp}.js
+│
+└── frontend/
+    ├── netlify.toml
+    └── src/
+        ├── environments/                 # environment.ts / environment.prod.ts (apiUrl)
+        └── app/
+            ├── core/                     # api.service, auth.interceptor, auth.guard, models/
+            ├── shared/                   # loading-spinner, confirm-dialog
+            ├── store/                    # auth.actions / auth.reducer / auth.selectors / app.state
+            ├── features/
+            │   ├── auth/ (login, register, auth.service, auth.models)
+            │   ├── customers/ (list, form, customer.service, customer.models)
+            │   ├── invoices/ (list, form, detail, invoice.service, invoice.models)
+            │   ├── payments/ (list, form, payment.service, payment.models)
+            │   └── dashboard/ (dashboard, dashboard-chart, dashboard.service, dashboard.models)
+            ├── app.config.ts             # providers: router, HttpClient+interceptor, NgRx store
+            └── app.routes.ts             # lazy standalone routes, authGuard on feature routes
 ```
 
 ---
 
 ## 5. Data Models (Mongoose Schemas)
 
+All schemas live in `backend/src/models/`. Indexes are declared for frequent query fields.
+
 ### 5.1 User
-```js
-{
-  _id: ObjectId,
-  name: String,
-  email: String (unique, required),
-  passwordHash: String,
-  role: String (enum: 'admin', 'staff'),
-  createdAt: Date,
-  updatedAt: Date
-}
 ```
+name, email (unique, lowercase, required),
+passwordHash (select: false — never returned by default),
+role (enum: 'admin' | 'staff', default 'staff'),
+timestamps
+```
+`toJSON` strips `passwordHash` and `__v`. Role is **never** settable via public registration.
 
 ### 5.2 Customer
-```js
-{
-  _id: ObjectId,
-  name: String (required),
-  email: String (required),
-  phone: String,
-  billingAddress: {
-    line1: String,
-    city: String,
-    state: String,
-    zip: String,
-    country: String
-  },
-  balance: Number (default: 0),      // running outstanding balance
-  createdBy: ObjectId (ref: User),
-  createdAt: Date,
-  updatedAt: Date
-}
 ```
+name (required), email (required, format-validated), phone,
+billingAddress { line1, city, state, zip, country },
+balance (Number, default 0)         // running outstanding balance — server-maintained (BR-2)
+status (enum: 'active' | 'archived', default 'active')   // soft-delete (BR-5)
+createdBy (ref User), timestamps
+```
+Indexes: `status`, `email`, `name`.
 
 ### 5.3 Invoice
-```js
-{
-  _id: ObjectId,
-  invoiceNumber: String (unique, auto-generated),   // human-readable ID shown to customers (e.g. "INV-2026-0042")
-  customerId: ObjectId (ref: Customer, required),   // which customer this invoice belongs to
-  items: [{                                          // line items — an array so an invoice can have multiple products/services
-    description: String,
-    quantity: Number,
-    unitPrice: Number,
-    total: Number                                    // = quantity * unitPrice, calculated at creation time
-  }],
-  subtotal: Number,                                  // sum of all item totals, before tax
-  tax: Number,
-  totalAmount: Number,                                // subtotal + tax — the final amount customer owes
-  status: String (enum: 'draft', 'sent', 'paid', 'overdue', 'cancelled'), // tracks invoice lifecycle
-  dueDate: Date,
-  isRecurring: Boolean (default: false),              // if true, this invoice auto-regenerates on a schedule
-  recurringCycle: String (enum: 'monthly', 'quarterly', 'yearly', null), // only relevant if isRecurring is true
-  pdfUrl: String,                                     // where the generated PDF is stored, filled in after PDFKit runs
-  idempotencyKey: String (unique, sparse),             // "sparse" means the unique constraint only applies to
-                                                        // documents that actually have this field — most queries
-                                                        // won't set this directly (it's mainly for reference/debugging,
-                                                        // the real idempotency check happens via the separate
-                                                        // IdempotencyKey collection, see Section 7.1)
-  createdAt: Date,
-  updatedAt: Date
-}
 ```
+invoiceNumber (unique)              // "INV-2026-0042", auto-generated via Counter
+customerId (ref Customer, required)
+items [{ description, quantity, unitPrice, total }]   // total computed server-side
+subtotal, tax, totalAmount          // computed server-side (FR-2.2)
+status (enum: draft | sent | paid | overdue | cancelled, default draft)
+dueDate, isRecurring (bool), recurringCycle (enum: monthly | quarterly | yearly | null)
+pdfUrl                              // (declared; PDFs are streamed on demand — see §13)
+lastReminderAt (Date)               // guards the upcoming-due reminder sweep (FR-4.1)
+idempotencyKey (unique, sparse)     // DB-enforced duplicate-write backstop (§7.1)
+timestamps
+```
+Indexes: `customerId`, `status`, `dueDate`, `(status, dueDate)` (for the overdue sweep).
 
 ### 5.4 Payment
-```js
-{
-  _id: ObjectId,
-  invoiceId: ObjectId (ref: Invoice, required),        // which invoice this payment is for
-  customerId: ObjectId (ref: Customer, required),      // denormalized here too, so we don't always need to
-                                                          // look up the invoice just to know who paid
-  amount: Number (required),
-  method: String (enum: 'card', 'bank_transfer', 'cash', 'other'),
-  status: String (enum: 'pending', 'completed', 'failed'), // payment gateway/reconciliation status
-  transactionRef: String,                                // external reference ID from payment gateway (if any)
-  idempotencyKey: String (unique, sparse),                // same purpose as in Invoice — see Section 7.1
-  createdAt: Date
-}
 ```
+invoiceId (ref Invoice, required), customerId (ref Customer, required)  // denormalized
+amount (required), method (enum: card | bank_transfer | cash | other),
+status (enum: pending | completed | failed, default pending),
+transactionRef, idempotencyKey (unique, sparse),
+createdAt only (no updatedAt)
+```
+Indexes: `invoiceId`, `customerId`.
 
 ### 5.5 AuditLog
-```js
-{
-  _id: ObjectId,
-  action: String,                     // e.g. 'INVOICE_CREATED', 'PAYMENT_UPDATED'
-  entityType: String,                 // 'Invoice', 'Customer', 'Payment'
-  entityId: ObjectId,
-  performedBy: ObjectId (ref: User),
-  beforeState: Object,
-  afterState: Object,
-  timestamp: Date
-}
+```
+action, entityType ('Invoice'|'Customer'|'Payment'), entityId,
+performedBy (ref User), beforeState, afterState (sanitized), timestamp
+```
+Sensitive keys (password/token/card fields, idempotencyKey) are stripped before write (§7.3).
+
+### 5.6 IdempotencyKey
+```
+key (unique), statusCode, response (Mixed), createdAt (TTL 24h)
+```
+
+### 5.7 Counter  *(infra — added for invoice numbering)*
+```
+_id (scope string, e.g. "invoice-2026"), seq (Number)
+static next(id, session) → atomic $inc, upsert   // race-safe sequential numbers
+```
+
+### 5.8 RevokedToken  *(infra — refresh-token denylist for logout/rotation)*
+```
+tokenHash (SHA-256 of refresh token, unique), userId, expiresAt (TTL — auto-purged at expiry)
 ```
 
 ---
 
 ## 6. API Endpoints
 
-### Auth
+Response envelope: success → `{ success: true, data }` (list endpoints add
+`{ items, pagination: { page, limit, total, pageCount, hasNextPage } }`); error → the centralized
+shape `{ success: false, message, errorCode }`. All non-auth routes require a Bearer access token.
+
+### Auth  (`/api/auth`)  — public; `register`/`login` are rate-limited
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/auth/register` | Register new user (sends a welcome email via SendGrid — see note) |
-| POST | `/api/auth/login` | Login, returns JWT |
-| POST | `/api/auth/refresh` | Refresh access token |
-| POST | `/api/auth/logout` | Invalidate refresh token |
+| POST | `/register` | Create user (role forced to `staff`); sends a best-effort welcome email |
+| POST | `/login` | Verify credentials → access token + sets httpOnly refresh cookie |
+| POST | `/refresh` | Rotate refresh token (old one denylisted) → new access token |
+| POST | `/logout` | Revoke the refresh token (denylist) + clear cookie |
 
-> **Welcome email:** on successful registration, `auth.service.register()` synchronously sends a
-> "Registration Successful" welcome email via SendGrid (`utils/mailer.sendMail` +
-> `welcomeEmailTemplate`). It is **best-effort** — a send failure is caught and logged, and never
-> fails the registration (registration success must not depend on email delivery). Registration is
-> not routed through BullMQ; only recurring invoices and reminders use the queue.
-
-### Customers
+### Customers  (`/api/customers`)  — auth required
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/customers` | List customers (paginated, filterable) |
-| GET | `/api/customers/:id` | Get customer details |
-| POST | `/api/customers` | Create customer |
-| PUT | `/api/customers/:id` | Update customer |
-| DELETE | `/api/customers/:id` | Delete/archive customer |
+| GET | `/` | List (paginated; `search`, `status` filters) |
+| GET | `/:id` | Get one (404 if missing) |
+| POST | `/` | Create (+ AuditLog) |
+| PUT | `/:id` | Update (+ AuditLog before/after) |
+| DELETE | `/:id` | **Archive** (soft-delete, BR-5) — not a hard delete |
 
-### Invoices
+### Invoices  (`/api/invoices`)  — auth required
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/invoices` | List invoices (filter by status, customer, date range) |
-| GET | `/api/invoices/:id` | Get invoice detail |
-| POST | `/api/invoices` | Create invoice (requires `Idempotency-Key` header) |
-| PUT | `/api/invoices/:id` | Update invoice |
-| DELETE | `/api/invoices/:id` | Cancel invoice |
-| GET | `/api/invoices/:id/pdf` | Download invoice PDF |
-| POST | `/api/invoices/:id/send` | Send invoice email to customer |
-| POST | `/api/invoices/:id/remind` | Send a payment reminder email (FR-4.1, manual trigger) |
+| GET | `/` | List (filter by `status`, `customerId`, date range) |
+| GET | `/:id` | Get one |
+| POST | `/` | Create — **requires `Idempotency-Key` header** (§7.1); txn: invoice + balance + audit |
+| PUT | `/:id` | Update items/dueDate/recurring flag (recomputes totals, adjusts balance) |
+| DELETE | `/:id` | **Cancel** (soft, BR-1) — **Admin only** (BR-5) |
+| GET | `/:id/pdf` | Stream the generated PDF (FR-2.6) |
+| POST | `/:id/send` | Mark sent + enqueue PDF+email job (FR-2.7) |
+| POST | `/:id/remind` | Enqueue a payment reminder email (FR-4.1, manual trigger) |
 
-### Payments
+### Payments  (`/api/payments`)  — auth required
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/payments` | List payments |
-| POST | `/api/payments` | Record payment (requires `Idempotency-Key` header) |
-| GET | `/api/payments/:id` | Payment detail |
+| GET | `/` | List (filter by `invoiceId`, `customerId`, `status`) |
+| POST | `/` | Record — **requires `Idempotency-Key` header**; txn: payment + invoice→paid + balance + audit |
+| GET | `/:id` | Get one |
 
-### Dashboard
+### Dashboard  (`/api/dashboard`)  — auth required
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/dashboard/summary` | Revenue, outstanding, overdue counts |
-| GET | `/api/dashboard/revenue-trend` | Time-series data for charts |
+| GET | `/summary` | `{ totalRevenue, totalOutstanding, totalOverdue, overdueCount }` (FR-5.1) |
+| GET | `/revenue-trend` | Time-series of completed payments; params `from`, `to`, `granularity` (day/month) (FR-5.2) |
 
 ---
 
 ## 7. Key Implementation Patterns
 
-### 7.1 Idempotency-Key Pattern
+### 7.1 Idempotency (two layers) — Spec 7.1 / FR-2.8 / FR-3.4
+1. **Cache layer** — `idempotency.middleware.js` on POST `/invoices` & `/payments`: looks up the
+   `Idempotency-Key` header in the `IdempotencyKey` collection; on hit, replays the stored response
+   (controller never runs). It caches **only 2xx** responses (so a transient 4xx/5xx never gets
+   pinned) and the cache write is best-effort/race-tolerant.
+2. **DB backstop** — the controller forwards the header to the service, which stores it as the
+   invoice/payment's unique `idempotencyKey`. If two requests race past the cache, the second
+   `insert` hits the unique index (E11000) and the service returns the existing record. This makes
+   idempotency correct even under true concurrency.
 
-**Problem it solves:** Network retries or double-clicks on "Create Invoice" / "Record Payment" can trigger the same request twice. Without protection, this creates duplicate invoices/payments.
+### 7.2 MongoDB transactions — `utils/withTransaction.js`
+Every write touching >1 collection runs inside `session.withTransaction()`: invoice create
+(number + invoice + customer balance + audit), payment record (payment + invoice status + balance +
+audit), customer create/update/archive, invoice update/cancel, overdue flip. **No standalone
+fallback** — transactions require a replica set (Atlas provides one; tests use a single-node
+replica set). We fail loudly rather than silently drop atomicity on financial writes.
 
-**Flow:**
-- Client generates a UUID and sends it in `Idempotency-Key` header for POST `/invoices` and POST `/payments`
-- Middleware checks if key exists in `IdempotencyKey` collection
-- If exists → return the previously stored response (no duplicate write, controller never runs again)
-- If not → let the request proceed, then store the key + response after processing
-- Keys auto-expire after 24 hours via TTL index (short-term protection only, no need to keep forever)
+### 7.3 Audit logging — `utils/audit.js`
+`writeAudit({ action, entityType, entityId, performedBy, beforeState, afterState, session })` writes
+an `AuditLog` entry inside the same transaction as the change. `sanitize()` strips sensitive keys
+(password/token/card fields, idempotencyKey) so secrets never reach the audit trail (BRD FR-6.2).
 
-**`models/IdempotencyKey.js`:**
-```js
-// Import Mongoose — the ODM (Object Document Mapper) we use to talk to MongoDB
-const mongoose = require('mongoose');
+### 7.4 Auth — `utils/tokens.js`, `modules/auth`
+- Access token (15 min) carries `{ sub, role, email }`; refresh token (7 days) carries `{ sub }`.
+- Refresh is stored in an **httpOnly cookie**; `/refresh` **rotates** it (old token hash added to the
+  `RevokedToken` denylist) and re-reads the user's current role.
+- `register` **never** accepts a client-supplied role → always `staff` (prevents privilege
+  escalation). Passwords hashed with bcrypt; hash is `select: false`.
 
-// Schema definition for the IdempotencyKey collection
-// This collection ONLY stores idempotency keys and their cached responses —
-// it does not store any business data (no invoice/payment details here)
-const idempotencyKeySchema = new mongoose.Schema({
+### 7.5 RBAC — `middleware/auth.middleware.js`
+`authMiddleware` verifies the Bearer token and sets `req.user = { id, role, email }`.
+`requireRole('admin')` guards Admin-only actions — currently **invoice cancel** (BR-5). Staff may
+archive customers, record payments, and create/edit invoices.
 
-  // The unique key sent by the client in the "Idempotency-Key" request header
-  // "unique: true" means MongoDB itself will reject a duplicate insert of the same key
-  key: { type: String, required: true, unique: true },
+### 7.6 Invoice numbering — `models/Counter.js`
+`Counter.next('invoice-<year>', session)` atomically `$inc`s a per-year sequence, formatted as
+`INV-YYYY-NNNN`. Atomic + transaction-scoped → race-safe, no duplicate numbers.
 
-  // The HTTP status code that was returned the first time this request was processed
-  // (e.g. 201 for "Created"). We store it so we can return the exact same status on repeat calls
-  statusCode: { type: Number, required: true },
+### 7.7 Balance invariant (BR-2)
+`customer.balance = Σ(totalAmount of non-cancelled invoices) − Σ(completed payments)`, maintained
+incrementally inside transactions: +total on invoice create, −amount on payment, −remaining on
+cancel, delta on invoice edit. **Never** accepted from the client.
 
-  // The actual response body sent back the first time (e.g. { invoiceId, invoiceNumber, ... })
-  // "Mixed" type means it can store any shape of object — since different endpoints
-  // (invoices, payments) will return different response structures
-  response: { type: mongoose.Schema.Types.Mixed, required: true },
+### 7.8 Overdue auto-flagging (BR-4) — `jobs/overdueCheck.job.js`
+A **repeatable** BullMQ job (daily cron `0 2 * * *`) finds `sent` invoices past `dueDate`, re-reads
+each inside a transaction (guards against a lost update vs a just-recorded payment), flips to
+`overdue` + writes an AuditLog, and enqueues a reminder.
 
-  // Timestamp of when this key was first stored
-  // "expires: 86400" creates a MongoDB TTL (Time-To-Live) index —
-  // MongoDB automatically deletes this document 86400 seconds (24 hours) after createdAt
-  // We don't need to keep idempotency keys forever — they only protect against
-  // short-term retries (network blips, double-clicks), not long-term storage
-  createdAt: { type: Date, default: Date.now, expires: 86400 }
-});
+### 7.9 Recurring invoices (BR-3) — `jobs/recurringInvoice.job.js`
+**Self-rescheduling delayed jobs** (not cron): each run creates the next occurrence and re-arms the
+next cycle. The chain stops when the source is no longer recurring, is cancelled, or the customer is
+archived. The occurrence carries a deterministic idempotencyKey (the job id) so a worker retry can't
+double-create.
 
-// Export the compiled model so other files (like the middleware) can import and use it
-module.exports = mongoose.model('IdempotencyKey', idempotencyKeySchema);
-```
+### 7.10 Reminders (FR-4.1)
+The daily job runs two sweeps: **overdue** (on flip) and **approaching-due** (`sent`, due within 3
+days, not yet reminded — guarded by `lastReminderAt`). A manual `POST /invoices/:id/remind` is also
+exposed. Reminder sending is async (worker).
 
-**`middleware/idempotency.middleware.js`:**
-```js
-// Import the IdempotencyKey model we just defined
-const IdempotencyKey = require('../models/IdempotencyKey');
+### 7.11 Email (SendGrid) — `utils/mailer.js` + `utils/emailTemplates.js`
+`sendMail({ to, subject, html, text, attachments })` owns the SendGrid transport. It is **lazily
+required** (importing the mailer never needs the package/network) and **dry-runs** when
+`SENDGRID_API_KEY` is unset (composes but doesn't send) — ideal for dev/tests. Buffer attachments
+(the invoice PDF) are base64-encoded for the SendGrid API. Templates: `invoiceSentTemplate`,
+`paymentReminderTemplate`, `welcomeEmailTemplate` — all HTML-escape user content. The **welcome
+email** on register is sent **synchronously but best-effort** (a failure is logged, never fails
+registration); all other emails go through the **worker**.
 
-// This is an Express middleware — it runs BEFORE the actual controller function
-// (req, res, next) is the standard Express middleware signature
-async function idempotencyMiddleware(req, res, next) {
+### 7.12 BullMQ job flow — `jobs/`, `workers/invoice.worker.js`
+Single queue `invoiceJobs`; job types `generatePDF`, `sendReminder`, `createRecurringInvoice`,
+`overdueCheck`. Producers retry 3× with exponential backoff (5s). The shared Redis connection is
+created lazily; `addInvoiceJob` has a **fast-fail timeout** so a Redis outage rejects (best-effort
+callers catch it) instead of hanging the request. `QUEUE_DISABLED=1` no-ops enqueues in tests. The
+worker registers a `'completed'`/`'failed'`/`'error'` listener set (the `error` listener prevents a
+transient queue error from crashing the process).
 
-  // Read the "Idempotency-Key" header sent by the client
-  // Header names in Express are automatically lowercased, so we read it as lowercase
-  const key = req.headers['idempotency-key'];
+### 7.13 Error handling — `middleware/errorHandler.js`
+Centralized; maps `ApiError`, Mongoose `ValidationError`/`CastError`/duplicate-key (11000) to proper
+statuses, returns `{ success, message, errorCode }`, and never leaks internals on 5xx.
 
-  // If the client didn't send a key at all, just skip this protection
-  // and let the request go through normally (next() passes control to the controller)
-  if (!key) return next();
+### 7.14 Frontend state split (NgRx + Signals) — Spec 7.5
+- **NgRx** store holds the shared **auth** feature (current user + status).
+- The **access token** lives in a Signal (persisted to localStorage; read synchronously by the HTTP
+  interceptor) — intentionally kept OUT of the store/devtools.
+- **Signals** power component-local state: form values, list filters, pagination, and computed
+  invoice subtotal/tax/total in the invoice form.
 
-  // Check the database — has this exact key been used before?
-  const existing = await IdempotencyKey.findOne({ key });
-
-  if (existing) {
-    // This key was already processed successfully before.
-    // Instead of running the controller again (which would create a duplicate
-    // invoice/payment), we just send back the SAME response we sent the first time.
-    return res.status(existing.statusCode).json(existing.response);
-  }
-
-  // --- If we reach here, this is a NEW request we haven't seen before ---
-
-  // We want to capture whatever response the controller eventually sends,
-  // so we "wrap" the original res.json function.
-  // originalJson keeps a reference to the real res.json method
-  const originalJson = res.json.bind(res);
-
-  // We override res.json so that whenever the controller calls res.json(data),
-  // our custom version runs FIRST — it saves the key + response to the database,
-  // and THEN calls the real res.json to actually send the response to the client
-  res.json = async (body) => {
-    await IdempotencyKey.create({
-      key,                        // the same key from the header
-      statusCode: res.statusCode, // whatever status code the controller set (e.g. 201)
-      response: body              // the actual response data the controller is sending
-    });
-    return originalJson(body); // now actually send the response to the client
-  };
-
-  // Let the request continue to the actual controller (e.g. createInvoice)
-  next();
-}
-
-// Export so routes can plug this in before their controller functions
-module.exports = idempotencyMiddleware;
-```
-
-**Usage:**
-```js
-// The middleware runs BEFORE the controller function.
-// Express runs functions in order: request → idempotencyMiddleware → controller
-// If the middleware calls res.json() itself (duplicate key case), the controller
-// function below never even runs — Express stops there.
-router.post('/invoices', idempotencyMiddleware, invoiceController.createInvoice);
-router.post('/payments', idempotencyMiddleware, paymentController.recordPayment);
-```
-
-### 7.2 MongoDB Multi-Document Transactions
-- Used in Invoice creation flow: `Invoice.create()` + `Customer.updateBalance()` + `AuditLog.create()` wrapped in a `session.withTransaction()` block
-- Ensures all-or-nothing consistency
-
-### 7.3 AuditLog Middleware
-- A post-save/post-update hook (or explicit service-layer call) captures before/after state for sensitive entities
-- Never log passwords or payment card data
-
-### 7.4 BullMQ Job Flow
-```
-Invoice created (isRecurring: true)
-   → recurringInvoice.job scheduled with cron pattern (per recurringCycle)
-   → Worker picks job at scheduled time
-   → Creates new Invoice document
-   → Queues invoiceReminder.job (PDF + email)
-   → invoice.worker.js generates PDF (PDFKit) + sends email (SendGrid)
-```
-
-### 7.5 NgRx + Signals Split
-- **NgRx store**: auth state, customer list (shared across invoice creation, dashboard), global loading/error state
-- **Signals**: component-local UI state — form values, toggle states, computed totals in invoice form
-
-### 7.6 Redis Quick Reference (for BullMQ)
-Redis's only role in BillFlow is as the **broker/storage layer for BullMQ** — it is not used as the primary database.
-
-```js
-// config/redis.js
-// ioredis is the Node.js client library we use to connect to Redis
-const Redis = require('ioredis');
-
-// Create one shared connection using the REDIS_URL from our .env file
-// (e.g. redis://localhost:6379 for local dev, or a cloud Redis URL for production)
-const connection = new Redis(process.env.REDIS_URL);
-
-// Export this single connection so both job producers (jobs/) and
-// job consumers (workers/) use the SAME Redis connection instead of
-// each file creating its own — this avoids opening too many connections
-module.exports = connection;
-```
-
-```js
-// jobs/recurringInvoice.job.js — adding a job to the queue
-// (this file is called from wherever an invoice is created, not run standalone)
-
-// Queue is the BullMQ class used to ADD jobs — it does not process them
-const { Queue } = require('bullmq');
-const connection = require('../config/redis');
-
-// Create (or connect to) a queue named "invoiceJobs" — this name must match
-// exactly what the worker listens to, otherwise jobs will never be picked up
-const invoiceQueue = new Queue('invoiceJobs', { connection });
-
-// Add a job to the queue. This does NOT run the PDF generation immediately —
-// it just writes a record to Redis saying "this job needs to be done".
-// A separate worker process picks it up whenever it's free.
-await invoiceQueue.add(
-  'generatePDF',                     // job name/type — the worker checks this to decide what to do
-  { invoiceId: invoice._id },        // job data — whatever info the worker needs to do its work
-  {
-    attempts: 3,                     // if the job fails, BullMQ will automatically retry up to 3 times
-    backoff: { type: 'exponential', delay: 5000 } // wait 5s, then 10s, then 20s between retries
-                                                    // (exponential backoff avoids hammering a failing service)
-  }
-);
-```
-
-```js
-// workers/invoice.worker.js — processing jobs
-// This file runs as a SEPARATE process from the main API server
-// (started with something like: node src/workers/invoice.worker.js)
-
-const { Worker } = require('bullmq');
-const connection = require('../config/redis');
-const { generatePDF } = require('../utils/pdfGenerator');
-const { sendInvoiceEmail } = require('../utils/emailTemplates');
-
-// Worker listens on the SAME queue name ("invoiceJobs") that jobs are added to.
-// Whenever a new job appears in Redis, this callback function runs automatically.
-const worker = new Worker('invoiceJobs', async (job) => {
-
-  // job.name tells us which TYPE of job this is (we might add more job types later,
-  // e.g. 'sendReminder', 'generateReport' — each handled differently here)
-  if (job.name === 'generatePDF') {
-
-    // job.data is whatever we passed in when the job was added (invoiceId here)
-    const pdfPath = await generatePDF(job.data.invoiceId);
-
-    // After the PDF is ready, immediately email it to the customer
-    await sendInvoiceEmail(job.data.invoiceId, pdfPath);
-  }
-
-  // If this function throws an error, BullMQ automatically triggers a retry
-  // (based on the "attempts" and "backoff" settings we defined when adding the job)
-}, { connection });
-```
-
-Local dev setup: `brew install redis` (Mac) → `redis-server` to start → confirm with `redis-cli ping` (should return `PONG`).
+### 7.15 Frontend HTTP layer — `core/`
+- `ApiService` prefixes `environment.apiUrl`, unwraps the `{ data }` envelope, and normalizes errors
+  into an `AppError` (distinguishing `NETWORK_ERROR` from backend errors); supports per-call headers
+  (client-generated `Idempotency-Key` via `crypto.randomUUID()` on invoice/payment create) and a
+  `getBlob` path for PDF download.
+- `authInterceptor` attaches the Bearer token to backend calls and, on a 401, calls `refresh()`
+  **once** (concurrent 401s share one in-flight refresh), retries, and on refresh failure clears the
+  session and routes to `/auth/login`.
+- `authGuard` (`CanActivateFn`) allows navigation when authenticated, else redirects to login.
 
 ---
 
 ## 8. Non-Functional Requirements
 
-| Area | Requirement |
+| Area | Requirement / Implementation |
 |---|---|
-| Auth | JWT access token (15 min expiry) + refresh token (7 days), httpOnly cookie for refresh |
-| Validation | Mongoose schema validation + class-validator/DTO validation at controller layer |
-| Error Handling | Centralized error middleware, consistent error response shape `{ success, message, errorCode }` |
-| Rate Limiting | Recommend `express-rate-limit` on auth and payment endpoints |
-| Logging | Request logging (morgan) + AuditLog for domain events |
-| Pagination | Cursor or offset-based pagination on list endpoints (default limit 20) |
-| Testing | Jest for backend unit/integration tests; Angular TestBed for frontend |
+| Data integrity | Multi-collection writes are atomic (transactions); balance is server-computed |
+| Duplicate prevention | Idempotency on money endpoints (cache + DB unique key) |
+| Auth | JWT access (15m) + refresh (7d, httpOnly cookie, rotated + denylisted) |
+| Validation | Mongoose schema validation + service-layer checks |
+| Error handling | Centralized middleware, consistent `{ success, message, errorCode }` |
+| Rate limiting | `express-rate-limit` on `/auth/register` and `/auth/login` |
+| Logging | morgan request logging + AuditLog for domain events; never logs secrets |
+| Pagination | Offset-based, default limit 20 (cap 100) |
+| Availability | Slow work offloaded to the worker; producer enqueues fast-fail on Redis outage |
 
 ---
 
-## 9. Environment Variables (`.env.example`)
+## 9. Environment Variables (`backend/environment/.env.example`)
 
 ```
 # Server
-PORT=5000
 NODE_ENV=development
+PORT=5000
+CLIENT_URL=http://localhost:4200          # CORS origin (Angular dev / Netlify in prod)
 
-# Database
-MONGODB_URI=mongodb+srv://...
+# Database (replica set required for transactions)
+MONGODB_URI=
 
-# Redis
-REDIS_URL=redis://...
+# Redis (BullMQ broker only)
+REDIS_URL=redis://127.0.0.1:6379
 
-# JWT
+# Auth / JWT
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
+BCRYPT_SALT_ROUNDS=10
 
-# Email (SendGrid)
-# EMAIL_FROM must be a SendGrid-verified sender. If SENDGRID_API_KEY is blank, the app runs in
-# DRY-RUN mode (composes but never sends) — convenient for local dev and tests.
+# Email (SendGrid) — blank SENDGRID_API_KEY ⇒ dry-run (composes, never sends)
 SENDGRID_API_KEY=
 EMAIL_FROM="BillFlow <no-reply@billflow.app>"
-
-# Frontend
-CLIENT_URL=https://billflow.netlify.app
 ```
+Also read by code (optional): `COMPANY_NAME` and `CURRENCY_SYMBOL` (PDF/email branding + money
+formatting), `QUEUE_DISABLED` / `QUEUE_ENQUEUE_TIMEOUT_MS` (queue behavior, mainly for tests).
+The real `.env` lives in `backend/environment/` and is **git-ignored** — never commit secrets.
 
 ---
 
-## 10. Development Workflow
+## 10. Testing Strategy
 
-1. Set up `.env` from `.env.example`
-2. `npm install` in both `frontend/` and `backend/`
-3. Backend: `npm run dev` (nodemon) — starts API + BullMQ worker
-4. Frontend: `ng serve` — starts Angular dev server
-5. Seed sample data via `npm run seed` (optional script)
-6. Run tests: `npm test` in each folder
+**Backend (Jest).** Two tiers, so the security-critical logic runs anywhere:
+- **Socket-free unit tests** (`*.unit.test.js`, `utils.test.js`, `backend-logic.unit.test.js`,
+  `notification.test.js`, `mailer.test.js`): JWT/middleware/RBAC, idempotency middleware behavior,
+  invoice totals + numbering, recurring cycle math, audit sanitize, pagination, dashboard pipeline,
+  templates, PDF buffer, mailer payload — no DB or socket.
+- **DB-backed integration** (`*.test.js` wrapped in `describeDb`): full flows via `mongodb-memory-server`
+  (standalone for reads, **single-node replica set** for transactions) + supertest — including the
+  **idempotency duplicate-key** test (service + HTTP) and **transaction rollback**, RBAC, balance
+  math, overdue/recurring/reminders, dashboard aggregation, welcome email.
+- Env: run on Node ≥ 20. Where TCP/Mongo is unavailable, set `BILLFLOW_SKIP_DB_TESTS=1` to skip the
+  DB tier cleanly; `QUEUE_DISABLED=1` keeps job producers socket-free. Infra: `tests/setup.env.js`,
+  `tests/helpers/db.js` (`connect` / `connectReplSet` / `clearDatabase` / `closeDatabase`).
+
+**Frontend.** Angular TestBed with Karma + Jasmine (`ng test`) — component + service specs.
 
 ---
 
-## 12. AI-Assisted Development Setup (Claude Code)
+## 11. Deployment
 
-BillFlow is developed using Claude Code with a structured Agent + Skill + Hook + MCP setup. Each piece has a distinct role:
+- **Frontend → Netlify** (`frontend/netlify.toml`); `environment.prod.ts` points `apiUrl` at the
+  Render API.
+- **Backend → Render** — a web service (`npm start`) and a separate worker (`npm run worker`); set
+  env vars in the Render dashboard. Redis via a managed provider (e.g. Upstash); MongoDB via Atlas.
 
-| | Purpose | Location |
+---
+
+## 12. AI-Assisted Development (Claude Code)
+
+| Piece | Purpose | Location |
 |---|---|---|
-| **MCP** | Connects Claude Code to external services (GitHub, Render, Netlify) | `.mcp.json` |
-| **Subagents** | Specialized roles that own specific areas of the codebase | `.claude/agents/*.md` |
-| **Skills** | Step-by-step reusable procedures for recurring implementation patterns | `.claude/skills/*/SKILL.md` |
-| **Hooks** | Automatic triggers that run a command at a specific event (before/after a tool runs) | `.claude/settings.json` |
+| **CLAUDE.md** | Project-wide rules (stack, idempotency/transaction/audit mandates, conventions) | `.claude/CLAUDE.md` |
+| **Subagents** | `frontend-agent`, `backend-agent`, `testing-agent`, `reviewer-agent` | `.claude/agents/*.md` |
+| **Skills** | `idempotent-endpoint` (POST-protection pattern) | `.claude/skills/*/SKILL.md` |
+| **MCP** | GitHub / Render / Netlify integrations | `.mcp.json` |
 
-### 12.1 `.claude/CLAUDE.md`
-Contains project-wide rules Claude Code follows automatically on every task:
-- Enforces Angular 21 standalone components + Signals/NgRx split
-- Enforces idempotency middleware on `/invoices` and `/payments` POST routes
-- Enforces MongoDB transactions for multi-collection writes
-- Enforces AuditLog entries on sensitive operations
-- Documents which subagent owns which task, and when to reach for a skill
-- Coding style, testing, and commit conventions
-
-### 12.2 Subagents (`.claude/agents/`)
-| Agent | Responsibility | Status |
-|---|---|---|
-| `frontend-agent.md` | Angular components, services, forms, Signals/NgRx state | Ready |
-| `backend-agent.md` | Express APIs, Mongoose schemas, BullMQ jobs, idempotency/transactions | Ready |
-| `testing-agent.md` | Jest + Angular TestBed tests, idempotency & transaction test coverage | Ready |
-| `reviewer-agent.md` | Pre-commit checklist — idempotency, transactions, audit logs, no leaked secrets | Ready |
-| `database-agent.md` | Schema design, indexing strategy, query optimization | Create when schema decisions come up |
-| `security-agent.md` | Auth flow review, input sanitization, dependency audits | Create when Payment module work begins |
-| `devops-agent.md` | Render/Netlify deployment configs, CI/CD, env var management | Create when deployment work starts |
-
-### 12.3 Skills (`.claude/skills/`)
-Skills capture a recurring implementation pattern as a step-by-step guide with real code, so it's applied consistently every time instead of being re-derived from scratch (or drifting) on each task.
-
-| Skill | Purpose | Status |
-|---|---|---|
-| `idempotent-endpoint` | Full pattern for protecting a POST endpoint against duplicate execution — model, middleware, route wiring, and required test case | Ready |
-| `mongoose-transaction` | Boilerplate for multi-collection atomic writes using `session.withTransaction()` | Create when needed |
-| `invoice-pdf-generation` | Correct PDFKit layout/formatting steps for generating invoice PDFs | Create when needed |
-
-**Skill file format** — every `SKILL.md` starts with YAML frontmatter so Claude Code can auto-discover relevance:
-```yaml
----
-name: idempotent-endpoint
-description: Use this skill when building any POST endpoint that creates or changes financial records...
----
-```
-
-### 12.4 MCP Configuration (`.mcp.json`)
-| MCP Server | Used For | Status |
-|---|---|---|
-| GitHub | Creating PRs, listing/triaging issues, reviewing open PRs | Connected |
-| Render | Creating/managing the backend web service, checking deployments and logs | Available, connect when deploying |
-| Netlify | Deploying and managing the frontend site | Available, connect when deploying |
-
-Setup requires a GitHub fine-grained Personal Access Token with `Contents`, `Pull requests`, and `Issues` permissions, stored as `GITHUB_PERSONAL_ACCESS_TOKEN` (never committed — add to `.gitignore`).
-
-### 12.5 Typical Workflow — All Three Working Together
-```
-"Build Payment recording API"
-   → backend-agent (Subagent) picks up the task
-   → backend-agent follows idempotent-endpoint (Skill) for the correct pattern
-   → testing-agent (Subagent) writes Jest tests, including the duplicate-key test
-   → reviewer-agent (Subagent) checks idempotency/transaction/audit-log rules
-   → GitHub MCP creates a PR with a summary
-```
-
-### 12.6 Hooks (`.claude/settings.json`)
-Hooks are automatic triggers — a command runs by itself at a specific event, without being asked each time.
-
-| Hook Event | Fires When | Status |
-|---|---|---|
-| `PostToolUse` (after Edit) | Every time a backend file is edited → auto-run `npm test` | Not yet configured — add once test suite is stable |
-| `PreToolUse` (before commit) | Before `git commit` → auto-run lint + format check | Not yet configured — add once CI conventions are settled |
-| `PreToolUse` (dangerous commands) | Before risky shell commands (e.g. `rm -rf`) → warn/block | Not yet configured |
-
-Example config shape:
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      { "matcher": "Edit", "hooks": [{ "type": "command", "command": "npm test" }] }
-    ]
-  }
-}
-```
-Not needed at BillFlow's current stage (early development) — worth adding once the codebase is large enough that manual "run tests" reminders become a bottleneck.
-
-### 12.7 Git & GitHub Automation
-Local git operations (`init`, `add`, `commit`, branch management) run through Claude Code's built-in bash tool — no MCP needed for these. GitHub MCP takes over for anything remote: creating the repo, pushing, opening PRs, managing issues.
-
-```bash
-# One-time local setup (setup-git.sh)
-git init
-git add .
-git commit -m "feat: initial project setup"
-git branch -M main
-```
-Then in Claude Code: `"Create a GitHub repo called BillFlow and push this project"` — GitHub MCP handles repo creation and push.
+Workflow: backend-agent builds an endpoint → follows the `idempotent-endpoint` skill → testing-agent
+adds Jest coverage (incl. the duplicate-key test) → reviewer-agent applies the pre-commit checklist
+(idempotency, transactions, audit logs, no leaked secrets, no `any`, tests present).
 
 ---
 
-## 13. Redis — Quick Context (For Reference)
+## 13. Known Gaps / To Decide
 
-Redis is used **only** as the storage/broker layer for BullMQ — not as the primary database and not (yet) as a general-purpose cache. Local development uses `redis-server` (installed via `brew install redis` on Mac). Production should use a managed free tier (Upstash recommended over Render's free Redis, which expires after 90 days).
-
-**Scope needed for this project:** basic key-value concept, a few CLI commands (`SET`/`GET`/`EXPIRE`), `ioredis` connection setup, and comfort with the BullMQ queue/worker pattern (Section 7.6). Advanced Redis topics (Cluster/Sentinel, Pub/Sub, persistence internals, deep caching strategy) are out of scope for BillFlow's current needs.
-
----
-
-## 14. Open Items / To Decide
-
-- [ ] Multi-tenancy strategy (single DB with tenantId field vs. DB-per-tenant)
-- [ ] File storage for generated PDFs (store in DB, S3-compatible bucket, or Render disk)
-- [ ] Rate limiting thresholds per endpoint
-- [ ] Webhook support for payment gateway integration (future)
-- [ ] Role-based permission granularity (currently just admin/staff)
-- [ ] Redis provider for production (Upstash free tier recommended)
-- [ ] When to create database-agent, security-agent, devops-agent, and remaining skills
+- **PDF storage** — PDFs are rendered on demand and streamed; `Invoice.pdfUrl` is declared but never
+  populated (no bucket/disk persistence yet). Decide: store in a bucket vs keep on-demand.
+- **`npm run seed`** references `src/seed.js`, which does not exist yet — add a seed script (also the
+  supported way to create the first **admin**, since registration only creates `staff`).
+- **Invoice list date params** — the frontend `InvoiceService.getAll` sends `fromDate`/`toDate`, but
+  the backend list filter reads `from`/`to`; align these.
+- **`authGuard` returnUrl** — the guard redirects to `/auth/login` but does not yet preserve the
+  attempted URL as `returnUrl`.
+- **Payment `pending`/`failed`** statuses have no promotion path to `completed` yet.
+- Multi-currency, multi-tenancy, and live payment-gateway webhooks remain out of scope (per BRD §3.2).
 
 ---
 
-*This is the final consolidated development spec — covers architecture, data models, API contracts, implementation patterns, and the full AI-assisted dev workflow (MCP + Subagents + Skills). Update as implementation decisions are finalized.*
+*This spec reflects the implemented codebase as of the version/date above. Update it alongside code
+changes.*
