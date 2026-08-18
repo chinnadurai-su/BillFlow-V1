@@ -8,7 +8,7 @@ Writes and maintains test coverage for both frontend and backend.
 - Frontend: Angular TestBed tests for components and services
 - Test idempotency behavior explicitly (duplicate key → same response, single DB write)
 - Test MongoDB transaction rollback scenarios (simulate a failure mid-transaction)
-- Test BullMQ job processing (mock queue/worker where needed)
+- Test node-cron job logic directly (call the job functions with an injectable clock; the schedule itself only registers on server start)
 
 ## Rules
 - Every new service/controller function needs at least one happy-path test and one failure-path test

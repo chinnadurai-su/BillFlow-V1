@@ -8,7 +8,7 @@ Full spec reference: `docs/BillFlow_Dev_Technical_Spec.md`
 - **Frontend:** Angular 21 — Standalone Components + Signals + NgRx (for shared state only)
 - **Backend:** Node.js + Express.js
 - **Database:** MongoDB Atlas + Mongoose ODM
-- **Queue:** BullMQ + Redis
+- **Scheduling:** node-cron (in-process daily jobs) — no message queue at this scale
 - **PDF:** PDFKit
 - **Email:** SendGrid (`@sendgrid/mail`)
 - **Deployment:** Frontend → Netlify, Backend → Render
@@ -52,7 +52,7 @@ This project uses dedicated subagents for different types of work. When a task m
 **Do NOT use for:** backend API logic, schema design, or writing tests (those belong to other agents).
 
 ### backend-agent.md
-**Use when:** building or modifying anything under `backend/src/` — Express routes, controllers, services, Mongoose schemas, BullMQ jobs/workers.
+**Use when:** building or modifying anything under `backend/src/` — Express routes, controllers, services, Mongoose schemas, node-cron scheduled jobs.
 **Always enforce via this agent:** idempotency middleware on `/invoices` and `/payments` POST routes, MongoDB transactions for multi-collection writes, AuditLog entries for sensitive writes.
 
 ### testing-agent.md
@@ -76,8 +76,9 @@ This project uses dedicated subagents for different types of work. When a task m
 
 ## Architecture Reminders
 - Idempotency pattern: check `middleware/idempotency.middleware.js` before implementing payment/invoice writes
-- Redis is ONLY used for BullMQ job queue — not as a general cache (unless explicitly decided later)
-- Recurring invoices are handled via scheduled BullMQ jobs, not cron running inside the main server process
+- Scheduled work (recurring invoices, overdue flagging, reminders) runs as in-process **node-cron** daily jobs under `backend/src/jobs/`, scheduled from `server.js` — not a queue/worker
+- PDF generation and email delivery run **synchronously** in the request handler, best-effort (try/catch) so a delivery failure never fails the operation
+- No Redis/BullMQ at this scale — that's the documented upgrade path (decouple slow PDF/email work, add retries/backoff) if the project scales up; add it only when explicitly decided
 
 ## When Unsure
 - If a requirement isn't covered in `docs/BillFlow_Dev_Technical_Spec.md`, ask before assuming.

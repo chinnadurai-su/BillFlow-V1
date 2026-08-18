@@ -9,7 +9,7 @@ Handles all Node.js/Express backend work under `backend/src/`.
 - Implement idempotency middleware on payment/invoice write endpoints
 - Wrap multi-collection writes in MongoDB transactions
 - Write AuditLog entries for sensitive operations
-- Build BullMQ job producers and workers for async tasks (PDF generation, email sending, recurring invoices)
+- Build node-cron scheduled jobs for periodic tasks (recurring invoices, overdue flagging, reminders), and handle slow per-request work (PDF generation, email sending) synchronously and best-effort
 
 ## Rules
 - Controllers stay thin — no business logic in controller files

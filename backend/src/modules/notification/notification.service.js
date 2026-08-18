@@ -1,28 +1,57 @@
-// notification.service.js — thin producer-side wrapper for outbound invoice emails (BRD FR-4.1–4.3).
+// notification.service.js — synchronous email sending for BillFlow (BRD FR-4.1/4.2).
 //
-// INTENTIONALLY THIN. This module does NOT talk to the email provider. It only ENQUEUES BullMQ jobs;
-// the actual PDF rendering + SendGrid send happens asynchronously in workers/invoice.worker.js. That split
-// is required by FR-4.3: "reminder and notification jobs shall run asynchronously and not block the
-// main application from responding to user requests." So the overdue-check job and any manual
-// "send reminder" / "send invoice" action call these helpers and return immediately, while delivery
-// (which can be slow or fail transiently) is retried in the background by the worker.
+// SIMPLICITY CHOICE (learning project): there is NO queue. This module does the real work directly —
+// render the PDF (PDFKit) and send the email (SendGrid via utils/mailer). Callers await it and wrap
+// it in try/catch so an email failure never breaks the main flow (invoice/payment still succeed).
+// The daily cron checks (jobs/*) also call these helpers directly.
+//
+// (Previously this was a thin BullMQ enqueue wrapper; the queue/worker were removed in favour of
+// synchronous sends + node-cron. See docs/BillFlow_Dev_Technical_Spec.md §7.)
 
-const { enqueueInvoiceReminder, enqueueInvoiceEmail } = require('../../jobs/invoiceReminder.job');
+const Invoice = require('../../models/Invoice');
+const Customer = require('../../models/Customer');
+const { renderInvoicePdf } = require('../../utils/pdfGenerator');
+const { sendMail } = require('../../utils/mailer');
+const { invoiceSentTemplate, paymentReminderTemplate } = require('../../utils/emailTemplates');
 
-/**
- * Queue a payment reminder email for an invoice (FR-4.1). Returns as soon as the job is enqueued.
- * @param {string} invoiceId
- */
-async function sendInvoiceReminder(invoiceId) {
-  return enqueueInvoiceReminder(invoiceId);
+// Load an invoice + its customer as plain objects (templates/PDF take plain objects).
+async function loadInvoiceAndCustomer(invoiceId) {
+  const invoice = await Invoice.findById(invoiceId);
+  if (!invoice) throw new Error(`Invoice ${invoiceId} not found`);
+  const customer = await Customer.findById(invoice.customerId);
+  return {
+    invoice: invoice.toObject(),
+    customer: customer ? customer.toObject() : {},
+  };
 }
 
 /**
- * Queue PDF generation + the "invoice sent" email for an invoice (FR-4.2). Returns immediately.
+ * Render the invoice PDF and email it to the customer with the PDF attached (FR-4.2).
+ * Synchronous — throws on failure so the caller can decide (callers treat it as best-effort).
  * @param {string} invoiceId
  */
 async function sendInvoiceEmail(invoiceId) {
-  return enqueueInvoiceEmail(invoiceId);
+  const { invoice, customer } = await loadInvoiceAndCustomer(invoiceId);
+  const pdf = await renderInvoicePdf(invoice, customer);
+  const { subject, html, text } = invoiceSentTemplate(invoice, customer);
+  return sendMail({
+    to: customer.email,
+    subject,
+    html,
+    text,
+    attachments: [{ filename: `${invoice.invoiceNumber || 'invoice'}.pdf`, content: pdf }],
+  });
 }
 
-module.exports = { sendInvoiceReminder, sendInvoiceEmail };
+/**
+ * Email a payment reminder for an invoice (FR-4.1). Tone (due-soon vs past-due) is derived from
+ * the invoice status inside paymentReminderTemplate. Synchronous — throws on failure.
+ * @param {string} invoiceId
+ */
+async function sendInvoiceReminder(invoiceId) {
+  const { invoice, customer } = await loadInvoiceAndCustomer(invoiceId);
+  const { subject, html, text } = paymentReminderTemplate(invoice, customer);
+  return sendMail({ to: customer.email, subject, html, text });
+}
+
+module.exports = { sendInvoiceEmail, sendInvoiceReminder };

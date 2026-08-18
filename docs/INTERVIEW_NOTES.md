@@ -10,7 +10,7 @@
 
 ## 30-second pitch
 
-BillFlow is a SaaS billing/invoicing platform (a lightweight Chargebee). Businesses manage customers, create one-off and recurring invoices, email them as PDFs, record payments, and watch revenue / outstanding / overdue on a dashboard. The engineering focus is **money correctness**: every financial write is **idempotent** (cache + unique-index backstop), **multi-collection writes are transactional** (all-or-nothing), and **every sensitive change is audit-logged inside the same transaction**. Full stack — Angular 21 (standalone + Signals + a thin NgRx auth slice), Node/Express, MongoDB Atlas + Mongoose, BullMQ/Redis workers, SendGrid, PDFKit.
+BillFlow is a SaaS billing/invoicing platform (a lightweight Chargebee). Businesses manage customers, create one-off and recurring invoices, email them as PDFs, record payments, and watch revenue / outstanding / overdue on a dashboard. The engineering focus is **money correctness**: every financial write is **idempotent** (cache + unique-index backstop), **multi-collection writes are transactional** (all-or-nothing), and **every sensitive change is audit-logged inside the same transaction**. Full stack — Angular 21 (standalone + Signals + a thin NgRx auth slice), Node/Express, MongoDB Atlas + Mongoose, in-process **node-cron** scheduled jobs, SendGrid, PDFKit.
 
 ## Tech stack at a glance
 
@@ -19,7 +19,7 @@ BillFlow is a SaaS billing/invoicing platform (a lightweight Chargebee). Busines
 | Frontend | Angular 21 — standalone + Signals, NgRx for shared state only | Signals for local reactivity; NgRx reserved for genuinely shared auth state |
 | Backend | Node.js + Express | Thin controllers, hand-wired `routes → controller → service` |
 | Database | MongoDB Atlas + Mongoose | Embedded line items; multi-doc ACID transactions on a replica set |
-| Queue | BullMQ + Redis | Jobs run outside the request cycle, survive restarts, retry with backoff |
+| Scheduling | node-cron (in-process) | Daily recurring/overdue/reminder checks — no queue infra at this scale (would add BullMQ + Redis to scale out) |
 | Email | **SendGrid** (`@sendgrid/mail`) | Managed deliverability + a dry-run fallback for dev/test |
 | PDF | PDFKit | In-memory `Buffer`, no Chromium, no temp files (Render FS is ephemeral) |
 | Deploy | Netlify (frontend) + Render (backend) | Free-tier friendly |
@@ -36,18 +36,18 @@ BillFlow is a SaaS billing/invoicing platform (a lightweight Chargebee). Busines
 # 1. Architecture & Tech Choices
 
 **Q1. Draw the request flow, browser to DB.**
-Angular component → feature data-access service → central `ApiService` (HttpClient) → `authInterceptor` attaches the Bearer token + `withCredentials` → Express route → `authMiddleware` verifies the JWT and sets `req.user` → thin controller validates and shapes the HTTP response → `*.service.js` holds business logic and opens a transaction → Mongoose → MongoDB. Responses use a `{ success, data }` envelope the frontend unwraps. Async work (PDF/email, recurring, overdue) is enqueued to BullMQ and consumed by a **separate worker process**.
+Angular component → feature data-access service → central `ApiService` (HttpClient) → `authInterceptor` attaches the Bearer token + `withCredentials` → Express route → `authMiddleware` verifies the JWT and sets `req.user` → thin controller validates and shapes the HTTP response → `*.service.js` holds business logic and opens a transaction → Mongoose → MongoDB. Responses use a `{ success, data }` envelope the frontend unwraps. Slow work (PDF/email) runs **synchronously** in the handler as best-effort; periodic work (recurring, overdue, reminders) runs as in-process **node-cron** daily jobs.
 
 ```
 Angular (Signals) ──HTTP──> Express API ──> service layer ──> MongoDB (replica set)
        │  authInterceptor        │  authMiddleware / RBAC        ▲
        │  (Bearer + cookie)      │  idempotency + transactions   │  $inc balance, audit
-       ▼                         ▼                               │
-   NgRx auth slice          BullMQ enqueue ──> Redis ──> Worker ─┘ (PDF, email, recurring, overdue)
+       ▼                         │  PDF + email (sync)           │
+   NgRx auth slice          node-cron (in-process) ─────────────┘ (recurring, overdue, reminders)
 ```
 
 **Q2. Why `routes → controller → service`?**
-Controllers stay thin — validate input, call a service, shape the response. All business logic and data access live in the service, so the same logic is reusable from HTTP controllers *and* from BullMQ workers (e.g. `createRecurringOccurrence` is called by the worker, never by an endpoint), and it's unit-testable without HTTP.
+Controllers stay thin — validate input, call a service, shape the response. All business logic and data access live in the service, so the same logic is reusable from HTTP controllers *and* from the scheduled node-cron jobs (e.g. `createRecurringOccurrence` is called by the recurring-invoice cron, never by an endpoint), and it's unit-testable without HTTP.
 
 **Q3. Why Angular Signals *and* NgRx — isn't that redundant?**
 They cover different scopes. **Signals** hold component-local state — form values, UI toggles, computed invoice totals, list pagination/search. **NgRx holds only genuinely shared state**: the current user + auth status, read by the route guard, the interceptor, and the nav shell. The store has exactly one feature slice (`auth`); every list/CRUD screen keeps its state in local Signals with a `reload$` + `switchMap` pattern (stale-request cancellation). `provideEffects([])` is wired but empty — all async auth work lives in `AuthService`, not effects. (A customer NgRx slice was deliberately removed to enforce this "NgRx for shared state only" rule.)
@@ -55,8 +55,8 @@ They cover different scopes. **Signals** hold component-local state — form val
 **Q4. Why MongoDB for financial data?**
 Invoices have variable-length line items that map naturally to an **embedded array** (single atomic document, no joins), and MongoDB on a **replica set** gives multi-document ACID transactions — exactly what the money paths need. I'd concede a relational DB is defensible for a strict general ledger; the trade-off is schema flexibility vs. relationally-enforced constraints.
 
-**Q5. Why BullMQ/Redis instead of node-cron in the web process?**
-Jobs run outside the request/response cycle, survive process restarts, retry with exponential backoff, and scale independently (spin up more worker instances without touching the API). CLAUDE.md explicitly forbids in-process cron for recurring invoices. Redis is used **only** as the queue backend, not as a general cache.
+**Q5. Why synchronous processing + node-cron instead of a queue like BullMQ/Redis?**
+For this project's scale, I used **synchronous processing** with **node-cron** for scheduled tasks like recurring invoices, the overdue sweep, and reminders. It's dramatically less infrastructure to run and reason about — no broker, no separate worker process, no extra failure mode — and every path stays easy to trace end to end, which matters for a portfolio/interview project. The trade-offs I'm explicit about: no built-in retry/backoff, no cross-process scaling, and a slow SendGrid call briefly occupies the request thread (mitigated by making email best-effort inside a try/catch so it never fails the operation). **At higher scale, I'd introduce a queue-based system like BullMQ + Redis** to decouple slow operations (PDF generation, email sending) from the API response cycle and handle retries more robustly — moving the daily sweeps to repeatable queue jobs and running a dedicated worker. Framing it as a scale-appropriate decision (not a default) is the point: I know exactly which pressure would justify the extra moving parts.
 
 **Q6. Why SendGrid over SMTP/Nodemailer?**
 Managed deliverability and a clean HTTP API (no SMTP socket handling). The decisive implementation detail is the **dry-run fallback**: `utils/mailer.js` lazily requires `@sendgrid/mail` only when `SENDGRID_API_KEY` is set; when it's unset it logs `[mailer] SENDGRID_API_KEY not set — skipping send…` and returns `{ dryRun: true }`. So importing the module never opens a socket or even requires the package, and dev/test/CI never send real mail or crash. Attachments are converted to base64 in `buildSendGridMessage` (pure/testable). *(The code and deps are 100% SendGrid; `.claude/CLAUDE.md`, the spec, and the README have all been aligned to match.)*
@@ -147,31 +147,31 @@ The access token is sent explicitly in a header (not automatically by the browse
 
 ---
 
-# 4. Async & Background Jobs
+# 4. Background & Scheduled Jobs
 
-**Q32. What runs the jobs, and what are the job types?**
-A single lazily-created BullMQ queue (`invoiceJobs`) and a **separate worker process** (`npm run worker`). The worker dispatches by `job.name`: `generatePDF` (render + email PDF), `sendReminder`, `createRecurringInvoice`, `overdueCheck`. The queue is created only on first enqueue (import-safe for tests), and `QUEUE_DISABLED=1` makes producers clean no-ops. Producers share a retry policy (`attempts: 3`, exponential backoff from 5s, `removeOnComplete: true`, `removeOnFail: false` to keep failures for inspection).
+**Q32. What runs the scheduled jobs, and what are they?**
+Three **node-cron** jobs scheduled in-process from `server.js`, all running daily (`0 0 * * *`): `recurringInvoiceCheck` (generate any recurring occurrences that are now due), `overdueCheck` (flag past-due `sent` invoices), and `reminderCheck` (email approaching / past-due reminders). There's no queue and no separate worker — each job just calls the same service-layer functions an HTTP handler would. The cron jobs are registered only when the server actually starts, so importing modules in a test never fires one. The one-off, per-request slow work (PDF render + email on invoice send) runs **synchronously** in the handler instead of being scheduled.
 
-**Q33. Recurring invoices — why self-rescheduling delayed jobs, not cron (FR-2.5)?**
-Each recurring occurrence is a **delayed job that re-arms itself** after it runs — no BullMQ repeatable/cron key to manage per invoice, and stop conditions are checked naturally at each occurrence (if the series should stop, the worker just doesn't re-enqueue). `cycleToDelayMs`: monthly = 30d, quarterly = 91d, yearly = 365d — a documented **approximation** trade-off (fixed intervals, not exact calendar months). Each occurrence is created as a concrete, non-recurring invoice (`isRecurring: false`) with `dueDate = now + one cycle`.
+**Q33. Recurring invoices — how does the daily check work (FR-2.5)?**
+A recurring **template** invoice (`isRecurring: true`) carries a next-occurrence date. The daily `recurringInvoiceCheck` cron finds every template whose next occurrence is now due and calls `createRecurringOccurrence`, which creates a concrete, non-recurring invoice (`isRecurring: false`) with `dueDate = now + one cycle` and advances the template for the following cycle. `cycleToDelayMs`: monthly = 30d, quarterly = 91d, yearly = 365d — a documented **approximation** trade-off (fixed intervals, not exact calendar months). Because it's a daily sweep keyed off a due date, a missed run (e.g. a restart) simply catches up on the next run rather than losing an occurrence.
 
 **Q34. BR-3 stop conditions — when does the recurring chain end?**
-`createRecurringOccurrence` returns `null` (and the worker does **not** re-arm) if: the source invoice is missing / not recurring / has no cycle, the source is `cancelled`, or the customer is missing or `archived`. Turning `isRecurring` off via the update endpoint clears `recurringCycle` and stops the series.
+`createRecurringOccurrence` returns `null` (and no occurrence is created) if: the source invoice is missing / not recurring / has no cycle, the source is `cancelled`, or the customer is missing or `archived`. Turning `isRecurring` off via the update endpoint clears `recurringCycle`, so the next daily sweep simply skips it and the series stops.
 
-**Q35. A recurring job crashes and BullMQ retries it — duplicate invoice?**
-No. The worker passes a deterministic key `recurring:<jobId>` as the occurrence's `idempotencyKey`. A retried job (same `job.id`) hits the unique index (E11000) and returns the existing occurrence instead of creating a second — so **no double-charge**. Email send and re-scheduling are independent best-effort steps (each in its own try/catch), so a Redis/email blip can't duplicate the invoice or break the chain.
+**Q35. The recurring check runs and an occurrence already exists — duplicate invoice?**
+No. The occurrence is created with a deterministic `idempotencyKey` derived from the source invoice + cycle date, so if a run overlaps or repeats (e.g. a restart mid-sweep, or two instances both firing the cron), the second insert hits the unique index (E11000) and `createRecurringOccurrence` returns the existing occurrence instead of creating a second — **no double-charge**. The email send and the template advance are independent best-effort steps (each in its own try/catch), so an email failure can't duplicate the invoice or break the chain. *(node-cron has no built-in retry — a queue like BullMQ would add automatic backoff/retry; here the daily cadence plus the idempotency key is the safety net.)*
 
-**Q36. Overdue auto-flagging — why cron here, and how is BR-4 enforced?**
-Overdue is a **system-wide daily sweep** with no per-entity stop condition, so a BullMQ **repeatable cron** (`0 2 * * *`) fits — it runs forever on a fixed cadence and survives restarts (BullMQ stores the schedule in Redis and dedupes identical repeat keys). `flagOverdueInvoices` finds `status:'sent', dueDate < now`, then **re-reads each candidate inside a transaction and re-asserts the precondition** (guards against a payment having flipped it to `paid` meanwhile), flips to `overdue`, writes `INVOICE_OVERDUE` (system action, `performedBy: undefined`), and enqueues a reminder. Because the flip moves it out of `sent`, each invoice is flagged exactly once. **BR-4: overdue is system-computed, never manually set** — no endpoint can set it. *(The compound `{status, dueDate}` index backs this query.)*
+**Q36. Overdue auto-flagging — how is BR-4 enforced?**
+Overdue is a **system-wide daily sweep** with no per-entity stop condition, so a plain daily **node-cron** job (`0 0 * * *`) fits — it runs forever on a fixed cadence. `flagOverdueInvoices` finds `status:'sent', dueDate < now`, then **re-reads each candidate inside a transaction and re-asserts the precondition** (guards against a payment having flipped it to `paid` meanwhile), flips to `overdue`, writes `INVOICE_OVERDUE` (system action, `performedBy: undefined`), and sends a reminder. Because the flip moves it out of `sent`, each invoice is flagged exactly once. **BR-4: overdue is system-computed, never manually set** — no endpoint can set it. *(The compound `{status, dueDate}` index backs this query.)*
 
 **Q37. How do reminders avoid spamming (FR-4.1)?**
 `remindUpcomingInvoices` reminds `sent` invoices due within 3 days that have no prior `lastReminderAt`, then stamps `lastReminderAt` — so a second daily run reminds each invoice at most once. The manual `POST /invoices/:id/remind` endpoint (admin + staff) also stamps `lastReminderAt` so the sweep won't immediately re-remind; it refuses paid/cancelled invoices (409).
 
-**Q38. Best-effort enqueues + fast-fail — why does the API never hang on Redis?**
-The shared ioredis connection uses `maxRetriesPerRequest: null`, so a command issued while Redis is down would buffer forever. `addInvoiceJob` therefore races the enqueue against a `QUEUE_ENQUEUE_TIMEOUT_MS` (3s default) timeout and rejects promptly. Callers treat enqueue as **best-effort** (invoice create still commits; the enqueue failure is logged, not fatal). The notification service is a thin producer — it only enqueues, never calls the email provider — satisfying **FR-4.3** (async delivery never blocks the API). *(Known gap: `registerOverdueCheck` on startup calls `queue.add` directly, bypassing the timeout race — a slow Redis at boot could delay startup.)*
+**Q38. Email is synchronous — how do you keep a slow/failing SendGrid call from breaking the API?**
+Every email send is **best-effort inside a try/catch**: the financial write (invoice send, payment, registration) commits first, and the email is attempted after — a SendGrid failure is logged, never fatal, and never rolls anything back. So correctness never depends on email delivery. The honest trade-off vs a queue is latency: a slow SendGrid response briefly occupies the request thread, and there's no automatic retry (a failed send is just logged). That's acceptable at this volume; the notification service is deliberately isolated so that moving it behind a **BullMQ queue** later (to satisfy FR-4.3 fully — delivery never touching the request path — and to get retries) is a localized change, not a rewrite. *(The daily reminder/overdue crons send the same way, so a transient email failure there is picked up on a later day's run.)*
 
-**Q39. Why send the welcome email synchronously but invoice email via a queue?**
-Registration is a low-frequency, non-financial action, so `register` calls `sendMail(welcomeEmailTemplate(user))` synchronously — but wrapped in try/catch as **best-effort**, so a SendGrid failure never fails registration (and no audit entry is written for it). Invoice/reminder delivery is higher-volume and must never block the API, so `sendInvoice` marks the invoice sent + enqueues `generatePDF`, and the worker renders + emails the PDF attachment.
+**Q39. All email is synchronous — how do you stop it from slowing down the response?**
+Every send is best-effort (try/catch) and happens *after* the transaction commits, so it never blocks correctness — but I keep the payloads lean and only send on discrete events (invoice send, payment, registration, the daily reminder sweep) rather than on hot read paths. Registration, for example, calls `sendMail(welcomeEmailTemplate(user))` synchronously but wrapped so a SendGrid failure never fails signup (and no audit entry is written for it); invoice send marks the invoice sent, renders the PDF, and emails it in the same handler. This is exactly the seam I'd move behind a queue if send volume or latency grew: enqueue a `generatePDF`/`sendEmail` job and let a worker do the slow part off the request thread.
 
 ---
 
@@ -199,8 +199,8 @@ DB tests are gated by `BILLFLOW_SKIP_DB_TESTS` (via `describeDb = flag ? describ
 **Q45. How do you test idempotency and rollback specifically?**
 **Idempotency:** call the create path twice with the same key and assert one record, one balance change, and identical responses — at both the service level and via real HTTP routes with a minted token. **Rollback:** mock `AuditLog.create` to throw mid-transaction and assert no invoice/payment was created and balances are unchanged — proving the transaction reverts every write.
 
-**Q46. How do you test code that depends on Redis/SendGrid/Mongo without them?**
-Dry-run mailer when `SENDGRID_API_KEY` is unset; `QUEUE_DISABLED=1` to no-op the queue (no Redis socket); in-memory Mongo (standalone + replica set); and the `BILLFLOW_SKIP_DB_TESTS` env gate for restricted sandboxes. Test setup also uses cost-4 bcrypt and throwaway JWT secrets.
+**Q46. How do you test code that depends on SendGrid/Mongo without them?**
+Dry-run mailer when `SENDGRID_API_KEY` is unset (no socket, package not even required); in-memory Mongo (standalone + replica set); and the `BILLFLOW_SKIP_DB_TESTS` env gate for restricted sandboxes. The node-cron jobs are only scheduled when the server boots, so importing services under test never fires one — the job logic (`flagOverdueInvoices`, `remindUpcomingInvoices`, `createRecurringOccurrence`) is called directly with an injectable clock instead. Test setup also uses cost-4 bcrypt and throwaway JWT secrets.
 
 **Q47. Adversarial / review-driven testing — anything notable?**
 The privilege-escalation fix (register ignoring a client `role`) came from a security review and has a dedicated test. Tests assert anti-enumeration (identical login error), the transaction rollback path, the recurring-occurrence dedupe (same key → one doc), and that email templates never leak `password` / `cardnumber` / `cvv`. *(Stack note: backend uses Jest; the frontend uses Angular TestBed with Karma/Jasmine per the spec — CLAUDE.md's "Jest for every service/controller" rule is scoped to the backend.)*
@@ -242,7 +242,7 @@ Replace the fixed 30/91/365-day approximations with real calendar-month arithmet
 Keep the aggregation index-backed and paginated, then **precompute daily revenue rollups** into a summary collection (or cache them) so the dashboard reads pre-aggregated data instead of scanning all payments. (Today `getRevenueTrend` runs a live `$match status:completed` + monthly `$group` pipeline on every request.)
 
 **Q53. If you rebuilt it today, top three changes?**
-(1) Optimistic concurrency (version field); (2) multi-tenancy isolation from day one; (3) precomputed dashboard rollups. Smaller cleanups: move the access token out of `localStorage`, wire the frontend `returnUrl` after guard bounce (currently the guard never appends it, so deep links land on `/dashboard`), add a `status` index on `Payment`, index `AuditLog` (e.g. `entityId`/`timestamp`), and route `registerOverdueCheck` through the fast-fail enqueue.
+(1) Optimistic concurrency (version field); (2) multi-tenancy isolation from day one; (3) precomputed dashboard rollups. Smaller cleanups: move the access token out of `localStorage`, wire the frontend `returnUrl` after guard bounce (currently the guard never appends it, so deep links land on `/dashboard`), add a `status` index on `Payment`, index `AuditLog` (e.g. `entityId`/`timestamp`), and — the moment email volume or latency grows — move PDF/email and the daily sweeps behind a **BullMQ + Redis** queue with a dedicated worker.
 
 ---
 

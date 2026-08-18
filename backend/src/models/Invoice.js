@@ -38,8 +38,11 @@ const invoiceSchema = new mongoose.Schema(
       default: null,
     },
     pdfUrl: { type: String }, // filled in after PDFKit runs
-    // Last time a reminder email was enqueued for this invoice. Used by the upcoming-due sweep
-    // (FR-4.1) to avoid re-reminding the same invoice on every daily run.
+    // For recurring TEMPLATE invoices: when the next occurrence should be generated. The daily
+    // recurringInvoiceCheck cron queries invoices where nextRecurrenceAt <= now (FR-2.5 / BR-3).
+    nextRecurrenceAt: { type: Date },
+    // Last time a reminder email was sent for this invoice. The daily reminderCheck cron uses this
+    // as a cooldown so the same invoice isn't reminded again too soon (FR-4.1).
     lastReminderAt: { type: Date },
     // "sparse" so the unique constraint only applies to docs that actually set it.
     // The real idempotency check happens via the IdempotencyKey collection (Spec Section 7.1).
@@ -54,5 +57,6 @@ invoiceSchema.index({ customerId: 1 });
 invoiceSchema.index({ status: 1 });
 invoiceSchema.index({ dueDate: 1 });
 invoiceSchema.index({ status: 1, dueDate: 1 }); // supports the overdue-check query
+invoiceSchema.index({ isRecurring: 1, nextRecurrenceAt: 1 }); // supports the recurring-check query
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

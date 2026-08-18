@@ -1,19 +1,17 @@
 // backend-logic.unit.test.js — socket-free unit tests for the pure business logic added across
 // Sections 3–10: invoice totals/numbering, recurring cycle math, audit sanitization, pagination,
-// the dashboard aggregation pipeline builder, idempotency middleware behavior (mocked model), and
-// the worker's job dispatcher. None of these need a DB or a socket, so they always run.
+// the dashboard aggregation pipeline builder, and idempotency middleware behavior (mocked model).
+// None of these need a DB or a socket, so they always run.
 
 // Mock the IdempotencyKey model so the middleware tests run without a DB. (Hoisted by jest.)
 jest.mock('../src/models/IdempotencyKey', () => ({ findOne: jest.fn(), create: jest.fn() }));
 
-const { computeTotals, formatInvoiceNumber } = require('../src/modules/invoice/invoice.service');
-const { cycleToDelayMs, DAY_MS } = require('../src/jobs/recurringInvoice.job');
+const { computeTotals, formatInvoiceNumber, cycleToDelayMs, DAY_MS } = require('../src/modules/invoice/invoice.service');
 const { sanitize } = require('../src/utils/audit');
 const { parsePagination, paginatedResult } = require('../src/utils/pagination');
 const { buildRevenueTrendPipeline } = require('../src/modules/dashboard/dashboard.service');
 const IdempotencyKey = require('../src/models/IdempotencyKey');
 const idempotencyMiddleware = require('../src/middleware/idempotency.middleware');
-const { processor } = require('../src/workers/invoice.worker');
 
 describe('invoice.computeTotals (FR-2.2)', () => {
   it('computes per-item totals, subtotal, tax, and total (server-side)', () => {
@@ -67,7 +65,7 @@ describe('invoice.formatInvoiceNumber (FR-2.4)', () => {
   });
 });
 
-describe('recurringInvoice.cycleToDelayMs (FR-2.5 / BR-3)', () => {
+describe('invoice.cycleToDelayMs (FR-2.5 / BR-3)', () => {
   it('maps cycles to day-based delays', () => {
     expect(cycleToDelayMs('monthly')).toBe(30 * DAY_MS);
     expect(cycleToDelayMs('quarterly')).toBe(91 * DAY_MS);
@@ -182,11 +180,5 @@ describe('idempotency middleware (Spec 7.1) — behavior with a mocked model', (
     expect(IdempotencyKey.create).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'k3', statusCode: 201, response: { success: true } })
     );
-  });
-});
-
-describe('invoice.worker dispatcher (Section 4)', () => {
-  it('rejects an unknown job type', async () => {
-    await expect(processor({ name: 'bogus', data: {} })).rejects.toThrow(/unknown job type/i);
   });
 });

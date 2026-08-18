@@ -1,13 +1,20 @@
 # BillFlow — Development Technical Specification
 
-**Version:** 5.0 (Implementation-aligned — rewritten from the current codebase)
+**Version:** 5.1 (Scheduling model documented as synchronous + node-cron across all docs)
 **Last updated:** 2026-08-18
 **Type:** SaaS Billing & Invoicing Platform
 **Domain Model:** Subscription/Invoice management (Chargebee-style)
 
-> This spec describes what is **actually implemented** in the repository today. Business-level
-> requirements live in [`BillFlow_BRD.md`](./BillFlow_BRD.md); design-decision rationale and
-> trade-offs live in [`INTERVIEW_NOTES.md`](./INTERVIEW_NOTES.md).
+> This spec describes the intended architecture of the repository. Business-level requirements live
+> in [`BillFlow_BRD.md`](./BillFlow_BRD.md); design-decision rationale and trade-offs live in
+> [`INTERVIEW_NOTES.md`](./INTERVIEW_NOTES.md).
+
+> **Changelog — v5.1:** Background processing is documented as **synchronous request handling +
+> in-process node-cron** for scheduled work (recurring invoices, overdue flagging, reminders), with
+> **no Redis/BullMQ queue or worker process**. This was a deliberate simplicity choice for this
+> project's scale (see §7.12); a BullMQ + Redis queue is documented as the upgrade path when
+> decoupled retries and cross-process scaling are needed. README, `INTERVIEW_NOTES.md`, and
+> `.claude/CLAUDE.md` were aligned to the same model in this pass.
 
 ---
 
@@ -22,7 +29,7 @@ financial-grade correctness (idempotency, transactions, audit logging) built in.
 - Invoice generation (manual + recurring), server-computed totals, auto invoice numbers
 - PDF invoice export (PDFKit)
 - Payment recording & reconciliation (auto invoice→paid, balance updates)
-- Automated overdue flagging + reminder emails (BullMQ + SendGrid)
+- Automated overdue flagging + reminder emails (daily node-cron + SendGrid)
 - "Registration Successful" welcome email on sign-up
 - Dashboard analytics (revenue, outstanding, overdue) via MongoDB aggregation
 - Role-based access (Admin / Staff) + audit logging for compliance
@@ -40,8 +47,7 @@ financial-grade correctness (idempotency, transactions, audit logging) built in.
 | Backend framework | Express.js 4 | REST API, feature-module layout |
 | Database | MongoDB Atlas | Replica set (required for transactions) |
 | ODM | Mongoose 8 | Schema validation + multi-document transactions |
-| Queue | BullMQ 5 | Background jobs (PDF, email, recurring, overdue) |
-| Queue broker | Redis (ioredis) | BullMQ backend only — not a cache |
+| Scheduling | node-cron | Daily checks: recurring invoices, overdue flagging, reminders |
 | PDF generation | PDFKit | Invoice PDFs (returned as a Buffer) |
 | Email | **SendGrid** (`@sendgrid/mail`) | Transactional + reminder emails (dry-run when no key) |
 | Auth | JWT (jsonwebtoken) | Access (15 min) + refresh (7 days, httpOnly cookie) |
@@ -64,25 +70,27 @@ financial-grade correctness (idempotency, transactions, audit logging) built in.
 ┌──────────────────────────────▼─────────────────────────────────────┐
 │                     Node.js + Express API Layer                     │
 │  auth ─ middleware(auth/idempotency/error) ─ customer ─ invoice ─   │
-│  payment ─ dashboard ─ notification(thin) ─ utils ─ jobs(producers) │
-└───────┬───────────────────────────────────────────┬────────────────┘
-        │                                             │ enqueue
-┌───────▼────────┐                          ┌─────────▼──────────┐
-│  MongoDB Atlas  │                          │   Redis + BullMQ   │
-│  (Mongoose ODM) │◄────── worker writes ────│   queue: invoiceJobs│
-└─────────────────┘                          └─────────┬──────────┘
-                                                        │ consume
-                                       ┌────────────────▼─────────────────┐
-                                       │  Worker Process (npm run worker)  │
-                                       │  generatePDF  → PDFKit + SendGrid │
-                                       │  sendReminder → SendGrid          │
-                                       │  createRecurringInvoice → clone   │
-                                       │  overdueCheck → flag + remind     │
-                                       └───────────────────────────────────┘
+│  payment ─ dashboard ─ notification(sync sender) ─ utils            │
+│                                                                     │
+│  Request handlers do ALL work synchronously, incl. PDF (PDFKit) +   │
+│  email (SendGrid) inline on invoice send (best-effort, try/catch).  │
+│                                                                     │
+│  node-cron (in-process) — three daily jobs at 00:00:                │
+│    • recurringInvoiceCheck → generate due recurring occurrences     │
+│    • overdueCheck          → flag past-due 'sent' invoices           │
+│    • reminderCheck         → email approaching/past-due reminders    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                     ┌─────────▼──────────┐
+                     │   MongoDB Atlas    │
+                     │   (Mongoose ODM)   │
+                     └────────────────────┘
 ```
 
-- **API server** handles synchronous REST. Slow/scheduled work (PDF, email, recurring, overdue) is
-  offloaded to a **separate worker process** via Redis/BullMQ so responses never block (BRD FR-4.3).
+- **No queue/worker.** This is a deliberate simplicity choice for a learning/interview project (see
+  §7.12): CRUD/auth flows and PDF+email run synchronously in the request; recurring/overdue/reminder
+  logic runs as three daily in-process **node-cron** checks. Email sends are wrapped in try/catch so a
+  delivery failure never breaks the main flow (the invoice/payment still succeeds).
 - **Frontend state split:** access token in an Angular Signal (+ localStorage); current user in NgRx;
   component-local UI (forms, computed totals) in Signals.
 
@@ -100,7 +108,7 @@ BillFlow/
 │   ├── environment/                      # .env (git-ignored) + .env.example
 │   ├── jest.config.js
 │   └── src/
-│       ├── config/                       # db.js (Mongoose), redis.js (shared ioredis)
+│       ├── config/                       # db.js (Mongoose connection)
 │       ├── middleware/                   # auth.middleware, idempotency.middleware, errorHandler
 │       ├── models/                       # User, Customer, Invoice, Payment, AuditLog,
 │       │                                 #   IdempotencyKey, Counter, RevokedToken
@@ -110,12 +118,12 @@ BillFlow/
 │       │   ├── invoice/
 │       │   ├── payment/
 │       │   ├── dashboard/                # summary + revenue-trend (aggregation)
-│       │   └── notification/             # thin enqueue wrapper (no HTTP routes)
-│       ├── jobs/                         # invoiceQueue, invoiceReminder, recurringInvoice, overdueCheck
-│       ├── workers/                      # invoice.worker.js (BullMQ consumer)
+│       │   └── notification/             # synchronous email sender (no HTTP routes)
+│       ├── jobs/                         # node-cron daily checks:
+│       │                                 #   recurringInvoiceCheck, overdueCheck, reminderCheck
 │       ├── utils/                        # tokens, ApiError, mailer(SendGrid), emailTemplates,
 │       │                                 #   pdfGenerator, audit, withTransaction, pagination, format
-│       └── server.js
+│       └── server.js                     # Express app + schedules the 3 cron jobs on startup
 │
 ├── backend/tests/                        # Jest: *.unit.test.js (socket-free) + *.test.js (DB-backed)
 │   ├── setup.env.js, jest.config.js, helpers/{db,authApp}.js
@@ -245,8 +253,8 @@ shape `{ success: false, message, errorCode }`. All non-auth routes require a Be
 | PUT | `/:id` | Update items/dueDate/recurring flag (recomputes totals, adjusts balance) |
 | DELETE | `/:id` | **Cancel** (soft, BR-1) — **Admin only** (BR-5) |
 | GET | `/:id/pdf` | Stream the generated PDF (FR-2.6) |
-| POST | `/:id/send` | Mark sent + enqueue PDF+email job (FR-2.7) |
-| POST | `/:id/remind` | Enqueue a payment reminder email (FR-4.1, manual trigger) |
+| POST | `/:id/send` | Mark sent + generate PDF & email it (synchronous, FR-2.7) |
+| POST | `/:id/remind` | Send a payment reminder email (synchronous, FR-4.1, manual trigger) |
 
 ### Payments  (`/api/payments`)  — auth required
 | Method | Endpoint | Description |
@@ -308,38 +316,46 @@ archive customers, record payments, and create/edit invoices.
 incrementally inside transactions: +total on invoice create, −amount on payment, −remaining on
 cancel, delta on invoice edit. **Never** accepted from the client.
 
-### 7.8 Overdue auto-flagging (BR-4) — `jobs/overdueCheck.job.js`
-A **repeatable** BullMQ job (daily cron `0 2 * * *`) finds `sent` invoices past `dueDate`, re-reads
-each inside a transaction (guards against a lost update vs a just-recorded payment), flips to
-`overdue` + writes an AuditLog, and enqueues a reminder.
+### 7.8 Overdue auto-flagging (BR-4) — `jobs/overdueCheck.js`
+The daily `overdueCheck` cron finds `sent` invoices past `dueDate`, re-reads each inside a
+transaction (guards against a lost update vs a just-recorded payment), and flips it to `overdue` +
+writes an AuditLog. `overdueCheck(now)` takes an injectable clock and is tested directly.
 
-### 7.9 Recurring invoices (BR-3) — `jobs/recurringInvoice.job.js`
-**Self-rescheduling delayed jobs** (not cron): each run creates the next occurrence and re-arms the
-next cycle. The chain stops when the source is no longer recurring, is cancelled, or the customer is
-archived. The occurrence carries a deterministic idempotencyKey (the job id) so a worker retry can't
-double-create.
+### 7.9 Recurring invoices (BR-3) — `jobs/recurringInvoiceCheck.js` + `invoice.service`
+A recurring **template** invoice (`isRecurring: true`) stores a `nextRecurrenceAt` date. The daily
+`recurringInvoiceCheck` cron finds templates whose `nextRecurrenceAt` has passed and calls
+`invoiceService.createRecurringOccurrence()`, which — in ONE transaction — creates the concrete
+occurrence (`isRecurring: false`, status `sent`), increments the customer balance, writes an
+AuditLog, and advances the template's `nextRecurrenceAt` by one cycle. The new occurrence is then
+emailed (best-effort). The series stops when the template is no longer recurring, is cancelled, or
+the customer is archived (all re-checked inside the transaction). `cycleToDelayMs()` maps
+monthly/quarterly/yearly to an approximate interval.
 
-### 7.10 Reminders (FR-4.1)
-The daily job runs two sweeps: **overdue** (on flip) and **approaching-due** (`sent`, due within 3
-days, not yet reminded — guarded by `lastReminderAt`). A manual `POST /invoices/:id/remind` is also
-exposed. Reminder sending is async (worker).
+### 7.10 Reminders (FR-4.1) — `jobs/reminderCheck.js`
+The daily `reminderCheck` cron finds unpaid invoices (`sent`/`overdue`) that are approaching (due
+within 3 days) or already past due and haven't been reminded within a cooldown (3 days, guarded by
+`lastReminderAt`), and emails each a reminder via `notification.service`. A manual
+`POST /invoices/:id/remind` is also exposed.
 
-### 7.11 Email (SendGrid) — `utils/mailer.js` + `utils/emailTemplates.js`
+### 7.11 Email (SendGrid) — `utils/mailer.js` + `utils/emailTemplates.js` + `modules/notification`
 `sendMail({ to, subject, html, text, attachments })` owns the SendGrid transport. It is **lazily
 required** (importing the mailer never needs the package/network) and **dry-runs** when
 `SENDGRID_API_KEY` is unset (composes but doesn't send) — ideal for dev/tests. Buffer attachments
 (the invoice PDF) are base64-encoded for the SendGrid API. Templates: `invoiceSentTemplate`,
-`paymentReminderTemplate`, `welcomeEmailTemplate` — all HTML-escape user content. The **welcome
-email** on register is sent **synchronously but best-effort** (a failure is logged, never fails
-registration); all other emails go through the **worker**.
+`paymentReminderTemplate`, `welcomeEmailTemplate` — all HTML-escape user content.
+`notification.service` composes template + PDF and calls `sendMail` **synchronously**; every caller
+(invoice send/remind, the welcome email, the cron checks) wraps it in try/catch so a delivery
+failure is logged and never breaks the main flow.
 
-### 7.12 BullMQ job flow — `jobs/`, `workers/invoice.worker.js`
-Single queue `invoiceJobs`; job types `generatePDF`, `sendReminder`, `createRecurringInvoice`,
-`overdueCheck`. Producers retry 3× with exponential backoff (5s). The shared Redis connection is
-created lazily; `addInvoiceJob` has a **fast-fail timeout** so a Redis outage rejects (best-effort
-callers catch it) instead of hanging the request. `QUEUE_DISABLED=1` no-ops enqueues in tests. The
-worker registers a `'completed'`/`'failed'`/`'error'` listener set (the `error` listener prevents a
-transient queue error from crashing the process).
+### 7.12 Scheduling & the no-queue decision — `jobs/`, `server.js`
+**Deliberate simplicity choice for a learning/interview project:** BillFlow has **no message queue
+or worker process**. CRUD/auth flows and PDF+email run **synchronously** in the request handler
+(email best-effort), and the three periodic concerns run as in-process **node-cron** jobs scheduled
+at `0 0 * * *` (daily midnight) from `server.js`: `recurringInvoiceCheck`, `overdueCheck`,
+`reminderCheck`. `node-cron` is required lazily inside `start()` so importing the app (e.g. in tests)
+never needs it. Trade-off vs a BullMQ/Redis queue: no retries/backoff, no cross-process scaling, and
+a slow SendGrid call briefly occupies the request thread — all acceptable at this scale, and far
+less infrastructure to run and reason about. (A queue would be the upgrade path for production scale.)
 
 ### 7.13 Error handling — `middleware/errorHandler.js`
 Centralized; maps `ApiError`, Mongoose `ValidationError`/`CastError`/duplicate-key (11000) to proper
@@ -376,7 +392,7 @@ statuses, returns `{ success, message, errorCode }`, and never leaks internals o
 | Rate limiting | `express-rate-limit` on `/auth/register` and `/auth/login` |
 | Logging | morgan request logging + AuditLog for domain events; never logs secrets |
 | Pagination | Offset-based, default limit 20 (cap 100) |
-| Availability | Slow work offloaded to the worker; producer enqueues fast-fail on Redis outage |
+| Availability | Email is best-effort (try/catch) so it never blocks CRUD; periodic work runs via daily node-cron, not in the request path |
 
 ---
 
@@ -391,9 +407,6 @@ CLIENT_URL=http://localhost:4200          # CORS origin (Angular dev / Netlify i
 # Database (replica set required for transactions)
 MONGODB_URI=
 
-# Redis (BullMQ broker only)
-REDIS_URL=redis://127.0.0.1:6379
-
 # Auth / JWT
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
@@ -406,8 +419,7 @@ SENDGRID_API_KEY=
 EMAIL_FROM="BillFlow <no-reply@billflow.app>"
 ```
 Also read by code (optional): `COMPANY_NAME` and `CURRENCY_SYMBOL` (PDF/email branding + money
-formatting), `QUEUE_DISABLED` / `QUEUE_ENQUEUE_TIMEOUT_MS` (queue behavior, mainly for tests).
-The real `.env` lives in `backend/environment/` and is **git-ignored** — never commit secrets.
+formatting). The real `.env` lives in `backend/environment/` and is **git-ignored** — never commit secrets.
 
 ---
 
@@ -423,7 +435,7 @@ The real `.env` lives in `backend/environment/` and is **git-ignored** — never
   **idempotency duplicate-key** test (service + HTTP) and **transaction rollback**, RBAC, balance
   math, overdue/recurring/reminders, dashboard aggregation, welcome email.
 - Env: run on Node ≥ 20. Where TCP/Mongo is unavailable, set `BILLFLOW_SKIP_DB_TESTS=1` to skip the
-  DB tier cleanly; `QUEUE_DISABLED=1` keeps job producers socket-free. Infra: `tests/setup.env.js`,
+  DB tier cleanly. Infra: `tests/setup.env.js`,
   `tests/helpers/db.js` (`connect` / `connectReplSet` / `clearDatabase` / `closeDatabase`).
 
 **Frontend.** Angular TestBed with Karma + Jasmine (`ng test`) — component + service specs.
@@ -434,8 +446,10 @@ The real `.env` lives in `backend/environment/` and is **git-ignored** — never
 
 - **Frontend → Netlify** (`frontend/netlify.toml`); `environment.prod.ts` points `apiUrl` at the
   Render API.
-- **Backend → Render** — a web service (`npm start`) and a separate worker (`npm run worker`); set
-  env vars in the Render dashboard. Redis via a managed provider (e.g. Upstash); MongoDB via Atlas.
+- **Backend → Render** — a single web service (`npm start`); set env vars in the Render dashboard.
+  MongoDB via Atlas (a replica set, required for transactions). No Redis/worker needed — the daily
+  node-cron jobs run in the same process. (Note: on multi-instance hosting the cron would run on
+  every instance; single-instance is assumed at this scale.)
 
 ---
 
