@@ -35,7 +35,7 @@ BillFlow is a full-stack SaaS billing platform that lets businesses manage custo
 | Queue Broker | Redis | BullMQ backend |
 | Charts | Chart.js | Dashboard visualizations |
 | PDF Generation | PDFKit | Invoice PDFs |
-| Email | Nodemailer | Transactional + reminder emails |
+| Email | SendGrid (`@sendgrid/mail`) | Transactional + reminder emails |
 | Auth | JWT | Access + refresh token pattern |
 | Frontend Hosting | Netlify | CI/CD via Git |
 | Backend Hosting | Render | Node web service |
@@ -66,7 +66,7 @@ BillFlow is a full-stack SaaS billing platform that lets businesses manage custo
                                           ┌─────────────▼──────────────┐
                                           │  Worker Process             │
                                           │  - PDFKit (generate PDF)    │
-                                          │  - Nodemailer (send email)  │
+                                          │  - SendGrid (send email)    │
                                           └─────────────────────────────┘
 ```
 
@@ -254,10 +254,16 @@ BillFlow/
 ### Auth
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/register` | Register new user (sends a welcome email via SendGrid — see note) |
 | POST | `/api/auth/login` | Login, returns JWT |
 | POST | `/api/auth/refresh` | Refresh access token |
 | POST | `/api/auth/logout` | Invalidate refresh token |
+
+> **Welcome email:** on successful registration, `auth.service.register()` synchronously sends a
+> "Registration Successful" welcome email via SendGrid (`utils/mailer.sendMail` +
+> `welcomeEmailTemplate`). It is **best-effort** — a send failure is caught and logged, and never
+> fails the registration (registration success must not depend on email delivery). Registration is
+> not routed through BullMQ; only recurring invoices and reminders use the queue.
 
 ### Customers
 | Method | Endpoint | Description |
@@ -278,6 +284,7 @@ BillFlow/
 | DELETE | `/api/invoices/:id` | Cancel invoice |
 | GET | `/api/invoices/:id/pdf` | Download invoice PDF |
 | POST | `/api/invoices/:id/send` | Send invoice email to customer |
+| POST | `/api/invoices/:id/remind` | Send a payment reminder email (FR-4.1, manual trigger) |
 
 ### Payments
 | Method | Endpoint | Description |
@@ -421,7 +428,7 @@ Invoice created (isRecurring: true)
    → Worker picks job at scheduled time
    → Creates new Invoice document
    → Queues invoiceReminder.job (PDF + email)
-   → invoice.worker.js generates PDF (PDFKit) + sends email (Nodemailer)
+   → invoice.worker.js generates PDF (PDFKit) + sends email (SendGrid)
 ```
 
 ### 7.5 NgRx + Signals Split
@@ -539,11 +546,11 @@ JWT_REFRESH_SECRET=
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
-# Email
-SMTP_HOST=
-SMTP_PORT=
-SMTP_USER=
-SMTP_PASS=
+# Email (SendGrid)
+# EMAIL_FROM must be a SendGrid-verified sender. If SENDGRID_API_KEY is blank, the app runs in
+# DRY-RUN mode (composes but never sends) — convenient for local dev and tests.
+SENDGRID_API_KEY=
+EMAIL_FROM="BillFlow <no-reply@billflow.app>"
 
 # Frontend
 CLIENT_URL=https://billflow.netlify.app
