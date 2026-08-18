@@ -35,7 +35,7 @@ BillFlow is a full-stack SaaS billing platform that lets businesses manage custo
 | Queue Broker | Redis | BullMQ backend |
 | Charts | Chart.js | Dashboard visualizations |
 | PDF Generation | PDFKit | Invoice PDFs |
-| Email | SendGrid (`@sendgrid/mail`) | Transactional + reminder emails |
+| Email | SendGrid (`@sendgrid/mail`) | Transactional + reminder emails | 
 | Auth | JWT | Access + refresh token pattern |
 | Frontend Hosting | Netlify | CI/CD via Git |
 | Backend Hosting | Render | Node web service |

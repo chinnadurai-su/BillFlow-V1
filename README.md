@@ -11,7 +11,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-UNLICENSED-lightgrey">
 </p>
 
-BillFlow is a Chargebee-style billing system split into an **Angular 21 SPA** and a **Node.js + Express REST API** backed by **MongoDB Atlas** and a **Redis/BullMQ** job queue. It is designed around financial-grade correctness: every money-moving endpoint is idempotent, multi-collection writes are transactional, and sensitive operations are audit-logged.
+BillFlow is a Chargebee-style billing system split into an **Angular 21 SPA** and a **Node.js + Express REST API** backed by **MongoDB Atlas** and a **Redis/BullMQ** job queue. It is designed around financial-grade correctness: every money-moving endpoint is idempotent, multi-collection writes are transactional, and sensitive operations are audit-logged. 
 
 ---
 
