@@ -65,11 +65,11 @@
         <dl class="invoice__dates">
           <div>
             <dt>Issued</dt>
-            <dd>{{ inv.createdAt }}</dd>
+            <dd>{{ inv.createdAt | appDate }}</dd>
           </div>
           <div>
             <dt>Due date</dt>
-            <dd>{{ inv.dueDate }}</dd>
+            <dd>{{ inv.dueDate | appDate }}</dd>
           </div>
         </dl>
       </div>

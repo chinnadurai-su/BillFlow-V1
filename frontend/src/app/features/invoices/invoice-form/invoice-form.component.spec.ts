@@ -88,6 +88,16 @@ describe('InvoiceFormComponent (create mode)', () => {
     expect(component.form.controls.recurringCycle.hasError('required')).toBeTrue();
   });
 
+  it('requires a customer, a due date, and a valid line item', () => {
+    expect(component.form.controls.dueDate.hasError('required')).toBeTrue();
+    component.form.controls.customerId.setValue('c1');
+    component.items.at(0).setValue({ description: 'x', quantity: 2, unitPrice: 50 });
+    // Still invalid until a due date is provided.
+    expect(component.form.invalid).toBeTrue();
+    component.form.controls.dueDate.setValue('2026-09-01');
+    expect(component.form.valid).toBeTrue();
+  });
+
   it('does not call create when the form is invalid', () => {
     component.submit();
     expect(invoiceSpy.create).not.toHaveBeenCalled();
@@ -95,6 +105,7 @@ describe('InvoiceFormComponent (create mode)', () => {
 
   it('creates with an idempotency key and navigates to the invoice on submit', () => {
     component.form.controls.customerId.setValue('c1');
+    component.form.controls.dueDate.setValue('2026-09-01');
     component.items.at(0).setValue({ description: 'x', quantity: 2, unitPrice: 50 });
     component.form.controls.taxRate.setValue(10);
 
@@ -103,6 +114,7 @@ describe('InvoiceFormComponent (create mode)', () => {
     expect(invoiceSpy.create).toHaveBeenCalledTimes(1);
     const [payloadArg, keyArg] = invoiceSpy.create.calls.mostRecent().args;
     expect(payloadArg.customerId).toBe('c1');
+    expect(payloadArg.dueDate).toBe('2026-09-01');
     expect(payloadArg.items).toEqual([{ description: 'x', quantity: 2, unitPrice: 50 }]);
     expect(payloadArg.tax).toBe(10);
     expect(payloadArg.recurringCycle).toBeNull();
@@ -129,6 +141,7 @@ describe('InvoiceFormComponent (edit mode)', () => {
     tax: 30,
     totalAmount: 330,
     status: 'draft',
+    dueDate: '2026-09-01T00:00:00.000Z',
     isRecurring: false,
   };
 
@@ -167,6 +180,7 @@ describe('InvoiceFormComponent (edit mode)', () => {
     });
     // tax 30 on subtotal 300 → 10%
     expect(component.form.controls.taxRate.value).toBe(10);
+    expect(component.form.controls.dueDate.value).toBe('2026-09-01');
   });
 
   it('updates (not creates) and navigates on submit', () => {

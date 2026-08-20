@@ -115,6 +115,21 @@ function impliedRate(invoice) {
 // DB-backed service functions.
 // ---------------------------------------------------------------------------
 
+/**
+ * Attach the denormalized `customerName` the list UI shows (Spec 5.3). Invoices store only
+ * customerId, so we resolve names here with a single batched ($in) lookup for the whole page — no N+1.
+ * @param {Array<object>} invoices lean invoice docs
+ */
+async function withCustomerNames(invoices) {
+  if (invoices.length === 0) return invoices;
+
+  const customerIds = [...new Set(invoices.map((i) => String(i.customerId)))];
+  const customers = await Customer.find({ _id: { $in: customerIds } }).select('name').lean();
+  const nameById = new Map(customers.map((c) => [String(c._id), c.name]));
+
+  return invoices.map((i) => ({ ...i, customerName: nameById.get(String(i.customerId)) || null }));
+}
+
 /** List invoices with pagination + filters: status, customerId, createdAt date range. */
 async function list(query = {}) {
   const { page, limit, skip } = parsePagination(query);
@@ -129,17 +144,21 @@ async function list(query = {}) {
   }
 
   const [items, total] = await Promise.all([
-    Invoice.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Invoice.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
     Invoice.countDocuments(filter),
   ]);
-  return paginatedResult(items, total, { page, limit });
+  return paginatedResult(await withCustomerNames(items), total, { page, limit });
 }
 
-/** Get one invoice by id (404 if missing). */
+/** Get one invoice by id (404 if missing), with its customer attached for the detail view. */
 async function getById(id) {
-  const invoice = await Invoice.findById(id);
+  const invoice = await Invoice.findById(id).lean();
   if (!invoice) throw new ApiError(404, 'Invoice not found', 'INVOICE_NOT_FOUND');
-  return invoice;
+  // The detail page renders inv.customer (name/email/billingAddress) and falls back to customerName.
+  const customer = await Customer.findById(invoice.customerId)
+    .select('name email billingAddress')
+    .lean();
+  return { ...invoice, customer: customer || null, customerName: customer ? customer.name : null };
 }
 
 /**

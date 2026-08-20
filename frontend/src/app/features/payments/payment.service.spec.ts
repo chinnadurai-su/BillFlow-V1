@@ -51,9 +51,9 @@ describe('PaymentService', () => {
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.get('invoiceId')).toBe('inv1');
 
-    const pageData = { items: [payment], total: 1, page: 1, limit: 20, totalPages: 1 };
-    req.flush({ success: true, data: pageData });
-    expect(result).toEqual(pageData);
+    const pagination = { page: 1, limit: 20, total: 1, pageCount: 1, hasNextPage: false };
+    req.flush({ success: true, items: [payment], pagination });
+    expect(result).toEqual({ items: [payment], total: 1, page: 1, limit: 20, totalPages: 1 });
   });
 
   it('create attaches a generated Idempotency-Key header', () => {

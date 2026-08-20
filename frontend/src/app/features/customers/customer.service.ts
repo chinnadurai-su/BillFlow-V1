@@ -17,7 +17,7 @@ export class CustomerService {
 
   /** GET /api/customers — paginated, filterable list. */
   getAll(params: CustomerListParams = {}): Observable<Paginated<Customer>> {
-    return this.api.get<Paginated<Customer>>('/customers', {
+    return this.api.getPaginated<Customer>('/customers', {
       params: { page: params.page, limit: params.limit, search: params.search },
     });
   }

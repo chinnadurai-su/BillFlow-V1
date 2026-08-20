@@ -148,6 +148,9 @@ describeDb('payment module (DB-backed)', () => {
       await paymentService.record({ invoiceId: invoice._id, amount: 50 }, 'u');
       const list = await paymentService.list({});
       expect(list.pagination.total).toBe(1);
+      // Rows carry the denormalized display fields the list UI needs (Spec 5.4).
+      expect(list.items[0].invoiceNumber).toBe(invoice.invoiceNumber);
+      expect(list.items[0].customerName).toBe(customer.name);
 
       await expect(
         paymentService.getById(new mongoose.Types.ObjectId())

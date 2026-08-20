@@ -39,7 +39,7 @@
                 <td>
                   <span [class]="badgeClass(payment.status)">{{ payment.status }}</span>
                 </td>
-                <td>{{ payment.createdAt }}</td>
+                <td>{{ payment.createdAt | appDate }}</td>
                 <td class="num">${{ money(payment.amount) }}</td>
               </tr>
             } @empty {

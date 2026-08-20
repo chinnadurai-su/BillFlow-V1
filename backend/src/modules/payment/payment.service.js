@@ -20,6 +20,31 @@ const { parsePagination, paginatedResult } = require('../../utils/pagination');
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 const VALID_METHODS = ['card', 'bank_transfer', 'cash', 'other'];
 
+/**
+ * Attach the denormalized `invoiceNumber` + `customerName` that the list UI shows (Spec 5.4).
+ * Payments store only invoiceId/customerId, so we resolve the display fields here with two batched
+ * ($in) lookups — one per collection for the whole page, so no N+1.
+ * @param {Array<object>} payments lean payment docs
+ */
+async function withDisplayNames(payments) {
+  if (payments.length === 0) return payments;
+
+  const invoiceIds = [...new Set(payments.map((p) => String(p.invoiceId)))];
+  const customerIds = [...new Set(payments.map((p) => String(p.customerId)))];
+  const [invoices, customers] = await Promise.all([
+    Invoice.find({ _id: { $in: invoiceIds } }).select('invoiceNumber').lean(),
+    Customer.find({ _id: { $in: customerIds } }).select('name').lean(),
+  ]);
+  const invoiceNumberById = new Map(invoices.map((i) => [String(i._id), i.invoiceNumber]));
+  const customerNameById = new Map(customers.map((c) => [String(c._id), c.name]));
+
+  return payments.map((p) => ({
+    ...p,
+    invoiceNumber: invoiceNumberById.get(String(p.invoiceId)) || null,
+    customerName: customerNameById.get(String(p.customerId)) || null,
+  }));
+}
+
 /** List payments with pagination + optional invoiceId/customerId/status filters. */
 async function list(query = {}) {
   const { page, limit, skip } = parsePagination(query);
@@ -30,10 +55,10 @@ async function list(query = {}) {
   if (query.status) filter.status = query.status;
 
   const [items, total] = await Promise.all([
-    Payment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Payment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
     Payment.countDocuments(filter),
   ]);
-  return paginatedResult(items, total, { page, limit });
+  return paginatedResult(await withDisplayNames(items), total, { page, limit });
 }
 
 /** Get one payment by id (404 if missing). */
