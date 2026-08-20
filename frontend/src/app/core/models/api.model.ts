@@ -21,8 +21,9 @@ export interface ApiErrorBody {
 }
 
 /**
- * Standard shape for a page of a paginated list endpoint (Spec §8: default limit 20).
- * Returned as the `data` payload, so ApiService unwrapping keeps the pagination metadata.
+ * Client-side shape for a page of a paginated list endpoint, as consumed by list
+ * components. `ApiService.getPaginated` maps the raw backend envelope into this shape
+ * (backend `pagination.pageCount` → `totalPages`).
  */
 export interface Paginated<T> {
   items: T[];
@@ -30,6 +31,23 @@ export interface Paginated<T> {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+/**
+ * Raw list-endpoint envelope (Spec §6). Unlike single-resource endpoints, list routes
+ * place `items` and `pagination` at the TOP LEVEL of the response — they are NOT wrapped
+ * in `data`. `ApiService.getPaginated` reads this and maps it into `Paginated<T>`.
+ */
+export interface PaginatedResponse<T> {
+  success: boolean;
+  items: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pageCount: number;
+    hasNextPage: boolean;
+  };
 }
 
 /** Per-call options accepted by ApiService helpers. */

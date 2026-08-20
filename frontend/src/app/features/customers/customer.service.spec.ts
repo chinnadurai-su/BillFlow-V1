@@ -37,9 +37,9 @@ describe('CustomerService', () => {
     expect(req.request.params.get('limit')).toBe('20');
     expect(req.request.params.get('search')).toBe('ac');
 
-    const pageData = { items: [customer], total: 1, page: 2, limit: 20, totalPages: 1 };
-    req.flush({ success: true, data: pageData });
-    expect(result).toEqual(pageData);
+    const pagination = { page: 2, limit: 20, total: 1, pageCount: 1, hasNextPage: false };
+    req.flush({ success: true, items: [customer], pagination });
+    expect(result).toEqual({ items: [customer], total: 1, page: 2, limit: 20, totalPages: 1 });
   });
 
   it('getById fetches a single customer', () => {

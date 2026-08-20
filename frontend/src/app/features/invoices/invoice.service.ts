@@ -17,7 +17,7 @@ export class InvoiceService {
 
   /** GET /api/invoices — filter by status, customer and date range. */
   getAll(params: InvoiceListParams = {}): Observable<Paginated<Invoice>> {
-    return this.api.get<Paginated<Invoice>>('/invoices', {
+    return this.api.getPaginated<Invoice>('/invoices', {
       params: {
         page: params.page,
         limit: params.limit,

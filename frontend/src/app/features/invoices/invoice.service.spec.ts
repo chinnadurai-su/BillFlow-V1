@@ -65,7 +65,8 @@ describe('InvoiceService', () => {
     expect(req.request.params.get('toDate')).toBe('2026-02-01');
     req.flush({
       success: true,
-      data: { items: [invoice], total: 1, page: 1, limit: 20, totalPages: 1 },
+      items: [invoice],
+      pagination: { page: 1, limit: 20, total: 1, pageCount: 1, hasNextPage: false },
     });
   });
 

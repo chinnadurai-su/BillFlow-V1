@@ -10,12 +10,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AppError } from '../../../core/models/api.model';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { LoadingSpinnerComponent } from '../../../shared/loading-spinner/loading-spinner.component';
+import { AppDatePipe } from '../../../shared/pipes/app-date.pipe';
 import { Invoice } from '../invoice.models';
 import { InvoiceService } from '../invoice.service';
 
 @Component({
   selector: 'app-invoice-detail',
-  imports: [RouterLink, ConfirmDialogComponent, LoadingSpinnerComponent],
+  imports: [RouterLink, ConfirmDialogComponent, LoadingSpinnerComponent, AppDatePipe],
   templateUrl: './invoice-detail.component.html',
   styleUrl: './invoice-detail.component.css',
 })

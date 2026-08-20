@@ -7,6 +7,7 @@ import { of, Subject } from 'rxjs';
 import { catchError, startWith, switchMap } from 'rxjs';
 
 import { AppError } from '../../../core/models/api.model';
+import { AppDatePipe } from '../../../shared/pipes/app-date.pipe';
 import { Payment, PaymentStatus } from '../payment.models';
 import { PaymentService } from '../payment.service';
 
@@ -14,7 +15,7 @@ const PAGE_SIZE = 20; // Spec §8 default list limit
 
 @Component({
   selector: 'app-payment-list',
-  imports: [RouterLink],
+  imports: [RouterLink, AppDatePipe],
   templateUrl: './payment-list.component.html',
   styleUrl: './payment-list.component.css',
 })

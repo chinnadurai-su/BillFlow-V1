@@ -13,7 +13,15 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs';
 
 import { environment } from '../../environments/environment';
-import { ApiErrorBody, ApiResponse, AppError, FRIENDLY_ERROR_MESSAGES, RequestOptions } from './models/api.model';
+import {
+  ApiErrorBody,
+  ApiResponse,
+  AppError,
+  FRIENDLY_ERROR_MESSAGES,
+  Paginated,
+  PaginatedResponse,
+  RequestOptions,
+} from './models/api.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -24,6 +32,26 @@ export class ApiService {
     return this.http
       .get<ApiResponse<T>>(this.url(path), this.buildOptions(options))
       .pipe(this.unwrap<T>());
+  }
+
+  /**
+   * GET a paginated list. List endpoints (Spec §6) return `{ success, items, pagination }`
+   * at the top level instead of a `data` payload, so this maps that envelope into the
+   * `Paginated<T>` shape list components consume (backend `pagination.pageCount` → `totalPages`).
+   */
+  getPaginated<T>(path: string, options: RequestOptions = {}): Observable<Paginated<T>> {
+    return this.http
+      .get<PaginatedResponse<T>>(this.url(path), this.buildOptions(options))
+      .pipe(
+        map((res) => ({
+          items: res?.items ?? [],
+          page: res?.pagination?.page ?? 1,
+          limit: res?.pagination?.limit ?? 0,
+          total: res?.pagination?.total ?? 0,
+          totalPages: res?.pagination?.pageCount ?? 0,
+        })),
+        catchError((error: HttpErrorResponse) => this.handleError(error)),
+      );
   }
 
   post<T>(path: string, body: unknown, options: RequestOptions = {}): Observable<T> {

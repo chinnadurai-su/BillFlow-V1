@@ -10,6 +10,7 @@ import { of, Subject } from 'rxjs';
 import { catchError, startWith, switchMap } from 'rxjs';
 
 import { AppError } from '../../../core/models/api.model';
+import { AppDatePipe } from '../../../shared/pipes/app-date.pipe';
 import { Invoice, InvoiceStatus } from '../invoice.models';
 import { InvoiceService } from '../invoice.service';
 
@@ -17,7 +18,7 @@ const PAGE_SIZE = 20; // Spec §8 default list limit
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [RouterLink],
+  imports: [RouterLink, AppDatePipe],
   templateUrl: './invoice-list.component.html',
   styleUrl: './invoice-list.component.css',
 })
@@ -81,6 +82,11 @@ export class InvoiceListComponent {
   /** Maps an invoice status to its badge CSS class (pure function). */
   badgeClass(status: InvoiceStatus): string {
     return `badge badge--${status}`;
+  }
+
+  /** Paid invoices are locked — editing is disabled once payment is recorded. */
+  canEdit(invoice: Invoice): boolean {
+    return invoice.status !== 'paid';
   }
 
   money(value: number): string {

@@ -2,6 +2,8 @@
 //
 // Purpose (see Spec Section 2 / 9): establishes the Mongoose connection using MONGODB_URI
 // from the environment. Mongoose is the ODM used for schema validation and transactions.
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']); // Google DNS use pannu
 
 const mongoose = require('mongoose');
 

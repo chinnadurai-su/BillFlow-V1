@@ -15,7 +15,7 @@ export class PaymentService {
 
   /** GET /api/payments — paginated list. */
   getAll(params: PaymentListParams = {}): Observable<Paginated<Payment>> {
-    return this.api.get<Paginated<Payment>>('/payments', {
+    return this.api.getPaginated<Payment>('/payments', {
       params: {
         page: params.page,
         limit: params.limit,

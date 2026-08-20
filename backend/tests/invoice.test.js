@@ -88,6 +88,23 @@ describeDb('invoice module (DB-backed)', () => {
     });
   });
 
+  describe('list / detail (denormalized display fields)', () => {
+    it('attaches customerName to each list row (Spec 5.3)', async () => {
+      await invoiceService.create({ customerId: customer._id, items }, 'u');
+      const result = await invoiceService.list({});
+      expect(result.pagination.total).toBe(1);
+      expect(result.items[0].customerName).toBe(customer.name);
+    });
+
+    it('getById returns the invoice with its customer + customerName for the detail view', async () => {
+      const created = await invoiceService.create({ customerId: customer._id, items }, 'u');
+      const detail = await invoiceService.getById(created._id);
+      expect(detail.customerName).toBe(customer.name);
+      expect(detail.customer.name).toBe(customer.name);
+      expect(detail.customer.email).toBe(customer.email);
+    });
+  });
+
   describe('idempotency (Spec 7.1 / FR-2.8)', () => {
     it('service-level: same idempotencyKey returns the same invoice, only one is created', async () => {
       const key = 'svc-key-1';

@@ -40,7 +40,7 @@ export class InvoiceFormComponent {
 
   readonly form = this.fb.nonNullable.group({
     customerId: ['', [Validators.required]],
-    dueDate: [''],
+    dueDate: ['', [Validators.required]],
     isRecurring: [false],
     recurringCycle: [''],
     taxRate: [0, [Validators.min(0)]],

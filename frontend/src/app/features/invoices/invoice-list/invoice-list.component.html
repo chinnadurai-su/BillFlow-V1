@@ -76,18 +76,28 @@
                 <td>
                   <span [class]="badgeClass(invoice.status)">{{ invoice.status }}</span>
                 </td>
-                <td>{{ invoice.dueDate }}</td>
+                <td>{{ invoice.dueDate | appDate }}</td>
                 <td class="num">${{ money(invoice.totalAmount) }}</td>
                 <td class="actions-col">
                   <div class="row-actions">
                     <a class="btn btn--sm btn--ghost" [routerLink]="['/invoices', invoice._id]">
                       View
                     </a>
-                    <a
-                      class="btn btn--sm btn--ghost"
-                      [routerLink]="['/invoices', invoice._id, 'edit']">
-                      Edit
-                    </a>
+                    @if (canEdit(invoice)) {
+                      <a
+                        class="btn btn--sm btn--ghost"
+                        [routerLink]="['/invoices', invoice._id, 'edit']">
+                        Edit
+                      </a>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn btn--sm btn--ghost"
+                        disabled
+                        title="Paid invoices can't be edited">
+                        Edit
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>

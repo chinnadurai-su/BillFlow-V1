@@ -38,8 +38,13 @@
         </div>
 
         <div class="field">
-          <label class="field__label" for="inv-due">Due date</label>
+          <label class="field__label" for="inv-due">
+            Due date <span class="req" aria-hidden="true">*</span>
+          </label>
           <input class="field__input" id="inv-due" type="date" formControlName="dueDate" />
+          @if (form.controls.dueDate.touched && form.controls.dueDate.hasError('required')) {
+            <p class="field__error">Due date is required.</p>
+          }
         </div>
 
         <div class="field">
@@ -82,28 +87,43 @@
         </div>
 
         @for (group of items.controls; track $index) {
-          <div class="items__row" [formGroupName]="$index">
-            <input
-              class="field__input"
-              type="text"
-              placeholder="Service or product description"
-              formControlName="description" />
-            <input class="field__input num" type="number" min="1" formControlName="quantity" />
-            <input
-              class="field__input num"
-              type="number"
-              min="0"
-              step="0.01"
-              formControlName="unitPrice" />
-            <span class="items__total num">${{ money(lineTotal($index)) }}</span>
-            <button
-              type="button"
-              class="icon-btn"
-              aria-label="Remove line item"
-              [disabled]="items.length === 1"
-              (click)="removeItem($index)">
-              ✕
-            </button>
+          <div class="items__line" [formGroupName]="$index">
+            <div class="items__row">
+              <input
+                class="field__input"
+                type="text"
+                placeholder="Service or product description"
+                formControlName="description" />
+              <input class="field__input num" type="number" min="1" formControlName="quantity" />
+              <input
+                class="field__input num"
+                type="number"
+                min="0"
+                step="0.01"
+                formControlName="unitPrice" />
+              <span class="items__total num">${{ money(lineTotal($index)) }}</span>
+              <button
+                type="button"
+                class="icon-btn"
+                aria-label="Remove line item"
+                [disabled]="items.length === 1"
+                (click)="removeItem($index)">
+                ✕
+              </button>
+            </div>
+            @if (group.touched && group.invalid) {
+              <div class="items__errors">
+                @if (group.get('description')?.hasError('required')) {
+                  <p class="field__error">Description is required.</p>
+                }
+                @if (group.get('quantity')?.invalid) {
+                  <p class="field__error">Quantity must be at least 1.</p>
+                }
+                @if (group.get('unitPrice')?.invalid) {
+                  <p class="field__error">Unit price must be 0 or more.</p>
+                }
+              </div>
+            }
           </div>
         } @empty {
           <p class="items__empty">No line items yet — add your first one below.</p>

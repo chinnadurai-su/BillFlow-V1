@@ -18,3 +18,22 @@ export interface RevenueTrendParams {
   fromDate?: string;
   toDate?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Raw API payloads (GET /api/dashboard/*). The backend uses different field
+// names than the view models above, so the service maps between them.
+// ---------------------------------------------------------------------------
+
+/** Raw summary payload from GET /api/dashboard/summary. */
+export interface DashboardSummaryResponse {
+  totalRevenue: number;
+  totalOutstanding: number;
+  totalOverdue: number;
+  overdueCount: number;
+}
+
+/** Raw revenue-trend row from GET /api/dashboard/revenue-trend. */
+export interface RevenueTrendResponse {
+  period: string; // "2026-08" (monthly) or "2026-08-17" (daily)
+  total: number;
+}
