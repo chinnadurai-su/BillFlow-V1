@@ -7,7 +7,14 @@
 // create a duplicate invoice (FR-2.8).
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AppError } from '../../../core/models/api.model';
@@ -15,6 +22,18 @@ import { Customer } from '../../customers/customer.models';
 import { CustomerService } from '../../customers/customer.service';
 import { Invoice, InvoicePayload, RecurringCycle } from '../invoice.models';
 import { InvoiceService } from '../invoice.service';
+
+// Rejects a date control whose value is before `minDate`. Both the control value and minDate are
+// `YYYY-MM-DD` strings (the native <input type="date"> format), which sort correctly as plain
+// strings — so no Date parsing / timezone pitfalls. Empty values pass (Validators.required owns
+// emptiness). Applied on create only, so historical invoices with past due dates still edit cleanly.
+function notBeforeDateValidator(minDate: string): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value as string;
+    if (!value) return null;
+    return value < minDate ? { pastDate: true } : null;
+  };
+}
 
 @Component({
   selector: 'app-invoice-form',
@@ -38,9 +57,21 @@ export class InvoiceFormComponent {
   readonly error = signal<string | null>(null);
   readonly customers = signal<Customer[]>([]);
 
+  // Today as a local `YYYY-MM-DD` string — drives the date input's `min` and the past-date
+  // validator on create. Computed from local parts (not toISOString, which is UTC and can be
+  // off by a day near midnight).
+  readonly today = this.toDateInputValue(new Date());
+
   readonly form = this.fb.nonNullable.group({
     customerId: ['', [Validators.required]],
-    dueDate: ['', [Validators.required]],
+    // A brand-new invoice shouldn't be born past-due (it would be flagged overdue and get a
+    // reminder immediately). On edit we skip the rule so existing past-due invoices stay valid.
+    dueDate: [
+      '',
+      this.isEdit
+        ? [Validators.required]
+        : [Validators.required, notBeforeDateValidator(this.today)],
+    ],
     isRecurring: [false],
     recurringCycle: [''],
     taxRate: [0, [Validators.min(0)]],
@@ -213,5 +244,13 @@ export class InvoiceFormComponent {
 
   private round2(value: number): number {
     return Math.round(value * 100) / 100;
+  }
+
+  // Format a Date as a local `YYYY-MM-DD` string for <input type="date"> (avoids UTC drift).
+  private toDateInputValue(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }
