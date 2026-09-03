@@ -12,6 +12,19 @@ import { InvoiceFormComponent } from './invoice-form.component';
 const customer: Customer = { _id: 'c1', name: 'Acme', email: 'a@acme.com', balance: 0 };
 const customerPage: Paginated<Customer> = { items: [customer], total: 1, page: 1, limit: 100, totalPages: 1 };
 
+// A due date safely in the future — create mode rejects past dates, so tests that need a
+// valid form must not hardcode a date that will drift into the past.
+function futureDate(daysAhead = 30): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// A date guaranteed to be in the past.
+function pastDate(daysAgo = 30): string {
+  return futureDate(-daysAgo);
+}
+
 const created: Invoice = {
   _id: 'inv1',
   invoiceNumber: 'INV-2026-0001',
@@ -94,7 +107,21 @@ describe('InvoiceFormComponent (create mode)', () => {
     component.items.at(0).setValue({ description: 'x', quantity: 2, unitPrice: 50 });
     // Still invalid until a due date is provided.
     expect(component.form.invalid).toBeTrue();
-    component.form.controls.dueDate.setValue('2026-09-01');
+    component.form.controls.dueDate.setValue(futureDate());
+    expect(component.form.valid).toBeTrue();
+  });
+
+  it('rejects a due date in the past (create mode) and exposes today as the min', () => {
+    component.form.controls.customerId.setValue('c1');
+    component.items.at(0).setValue({ description: 'x', quantity: 2, unitPrice: 50 });
+
+    component.form.controls.dueDate.setValue(pastDate());
+    expect(component.form.controls.dueDate.hasError('pastDate')).toBeTrue();
+    expect(component.form.invalid).toBeTrue();
+
+    // Today itself is allowed (min boundary is inclusive).
+    component.form.controls.dueDate.setValue(component.today);
+    expect(component.form.controls.dueDate.hasError('pastDate')).toBeFalse();
     expect(component.form.valid).toBeTrue();
   });
 
@@ -104,8 +131,9 @@ describe('InvoiceFormComponent (create mode)', () => {
   });
 
   it('creates with an idempotency key and navigates to the invoice on submit', () => {
+    const due = futureDate();
     component.form.controls.customerId.setValue('c1');
-    component.form.controls.dueDate.setValue('2026-09-01');
+    component.form.controls.dueDate.setValue(due);
     component.items.at(0).setValue({ description: 'x', quantity: 2, unitPrice: 50 });
     component.form.controls.taxRate.setValue(10);
 
@@ -114,7 +142,7 @@ describe('InvoiceFormComponent (create mode)', () => {
     expect(invoiceSpy.create).toHaveBeenCalledTimes(1);
     const [payloadArg, keyArg] = invoiceSpy.create.calls.mostRecent().args;
     expect(payloadArg.customerId).toBe('c1');
-    expect(payloadArg.dueDate).toBe('2026-09-01');
+    expect(payloadArg.dueDate).toBe(due);
     expect(payloadArg.items).toEqual([{ description: 'x', quantity: 2, unitPrice: 50 }]);
     expect(payloadArg.tax).toBe(10);
     expect(payloadArg.recurringCycle).toBeNull();
@@ -132,6 +160,8 @@ describe('InvoiceFormComponent (edit mode)', () => {
   let customerSpy: jasmine.SpyObj<CustomerService>;
   let router: Router;
 
+  // Loaded invoice is already past due — editing it must not retroactively flag the date.
+  const existingDue = pastDate(60);
   const existing: Invoice = {
     _id: 'inv1',
     invoiceNumber: 'INV-2026-0001',
@@ -141,7 +171,7 @@ describe('InvoiceFormComponent (edit mode)', () => {
     tax: 30,
     totalAmount: 330,
     status: 'draft',
-    dueDate: '2026-09-01T00:00:00.000Z',
+    dueDate: `${existingDue}T00:00:00.000Z`,
     isRecurring: false,
   };
 
@@ -180,7 +210,13 @@ describe('InvoiceFormComponent (edit mode)', () => {
     });
     // tax 30 on subtotal 300 → 10%
     expect(component.form.controls.taxRate.value).toBe(10);
-    expect(component.form.controls.dueDate.value).toBe('2026-09-01');
+    expect(component.form.controls.dueDate.value).toBe(existingDue);
+  });
+
+  it('keeps an already-past due date valid in edit mode (no past-date rule on edit)', () => {
+    expect(component.form.controls.dueDate.value).toBe(existingDue);
+    expect(component.form.controls.dueDate.hasError('pastDate')).toBeFalse();
+    expect(component.form.valid).toBeTrue();
   });
 
   it('updates (not creates) and navigates on submit', () => {

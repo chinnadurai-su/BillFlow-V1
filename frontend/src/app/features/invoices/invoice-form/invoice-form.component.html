@@ -41,9 +41,18 @@
           <label class="field__label" for="inv-due">
             Due date <span class="req" aria-hidden="true">*</span>
           </label>
-          <input class="field__input" id="inv-due" type="date" formControlName="dueDate" />
+          <input
+            class="field__input"
+            id="inv-due"
+            type="date"
+            formControlName="dueDate"
+            [attr.min]="isEdit ? null : today"
+          />
           @if (form.controls.dueDate.touched && form.controls.dueDate.hasError('required')) {
             <p class="field__error">Due date is required.</p>
+          }
+          @if (form.controls.dueDate.touched && form.controls.dueDate.hasError('pastDate')) {
+            <p class="field__error">Due date cannot be in the past.</p>
           }
         </div>
 
