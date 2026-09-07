@@ -21,8 +21,7 @@ BillFlow is a SaaS billing/invoicing platform (a lightweight Chargebee). Busines
 | Database | MongoDB Atlas + Mongoose | Embedded line items; multi-doc ACID transactions on a replica set |
 | Scheduling | node-cron (in-process) | Daily recurring/overdue/reminder checks — no queue infra at this scale (would add BullMQ + Redis to scale out) |
 | Email | **SendGrid** (`@sendgrid/mail`) | Managed deliverability + a dry-run fallback for dev/test |
-| PDF | PDFKit | In-memory `Buffer`, no Chromium, no temp files (Render FS is ephemeral) |
-| Deploy | Netlify (frontend) + Render (backend) | Free-tier friendly |
+| PDF | PDFKit | In-memory `Buffer`, no Chromium, no temp files |
 
 ## The four signature concerns
 
@@ -62,7 +61,7 @@ For this project's scale, I used **synchronous processing** with **node-cron** f
 Managed deliverability and a clean HTTP API (no SMTP socket handling). The decisive implementation detail is the **dry-run fallback**: `utils/mailer.js` lazily requires `@sendgrid/mail` only when `SENDGRID_API_KEY` is set; when it's unset it logs `[mailer] SENDGRID_API_KEY not set — skipping send…` and returns `{ dryRun: true }`. So importing the module never opens a socket or even requires the package, and dev/test/CI never send real mail or crash. Attachments are converted to base64 in `buildSendGridMessage` (pure/testable). *(The code and deps are 100% SendGrid; `.claude/CLAUDE.md`, the spec, and the README have all been aligned to match.)*
 
 **Q7. Why PDFKit and not headless-browser rendering?**
-`renderInvoicePdf` builds the PDF as an in-memory `Buffer` (collects `data` chunks, resolves on `end`) — no Chromium, no temp files. That matters because Render's filesystem is ephemeral, so nothing is persisted; the caller decides whether to stream it (`GET /invoices/:id/pdf`) or attach it to email. Puppeteer would be heavier and memory-hungry for structured documents. *(The `Invoice.pdfUrl` field exists but is never written — PDFs are always rendered on demand.)*
+`renderInvoicePdf` builds the PDF as an in-memory `Buffer` (collects `data` chunks, resolves on `end`) — no Chromium, no temp files. That matters because nothing is persisted to a filesystem; the caller decides whether to stream it (`GET /invoices/:id/pdf`) or attach it to email. Puppeteer would be heavier and memory-hungry for structured documents. *(The `Invoice.pdfUrl` field exists but is never written — PDFs are always rendered on demand.)*
 
 **Q8. How do frontend and backend keep their contract in sync?**
 REST with a consistent JSON envelope: `{ success, data }` for single items, `{ success, items, pagination }` for lists. The frontend has a typed model layer (`ApiResponse<T>`, `Paginated<T>`, `AppError`, per-feature models) — no `any` anywhere — and `ApiService` unwraps `res.data`. Stable backend `errorCode`s map to friendly copy via a `FRIENDLY_ERROR_MESSAGES` table.
@@ -140,7 +139,7 @@ bcrypt-hashed with a configurable cost (`BCRYPT_SALT_ROUNDS`, default 10; 4 in t
 Unknown-email and wrong-password both return the identical `401 INVALID_CREDENTIALS` ("Invalid email or password"). *(Honest caveat: `/register` does return `409 EMAIL_TAKEN`, which reveals whether an email is registered — a known trade-off for a friendlier signup UX.)*
 
 **Q30. Other auth hardening?**
-Rate limiting on `/register` and `/login` (20/IP/15min, skipped in tests; `/refresh` and `/logout` are not limited). Cookie attributes tuned per env (`Secure` + `SameSite=None` in prod for the Netlify→Render cross-origin, `SameSite=Strict` otherwise). Customer search terms are regex-escaped before building Mongo `$or` queries; email/PDF template content is HTML-escaped; Mongoose parameterizes queries; Angular escapes bindings by default.
+Rate limiting on `/register` and `/login` (20/IP/15min, skipped in tests; `/refresh` and `/logout` are not limited). Cookie attributes tuned per env (`Secure` + `SameSite=None` in prod for a cross-origin frontend/backend, `SameSite=Strict` otherwise). Customer search terms are regex-escaped before building Mongo `$or` queries; email/PDF template content is HTML-escaped; Mongoose parameterizes queries; Angular escapes bindings by default.
 
 **Q31. Refresh token in a cookie, access token in JS — CSRF and XSS?**
 The access token is sent explicitly in a header (not automatically by the browser), so it isn't CSRF-exploitable; the refresh cookie relies on `SameSite` / `Secure`. *(Honest caveat: the access token is persisted to `localStorage`, which is XSS-readable — a pragmatic UX choice I'd flag; a stricter posture keeps it in memory only.)*
