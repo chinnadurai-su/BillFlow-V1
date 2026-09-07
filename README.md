@@ -32,7 +32,6 @@ Requirements traceability throughout this document uses the `FR-*` / `BR-*` IDs 
 - [Key Implementation Patterns](#key-implementation-patterns)
 - [Data Models](#data-models)
 - [Testing](#testing)
-- [Deployment](#deployment)
 - [AI-Assisted Development](#ai-assisted-development)
 - [Contributing & Conventions](#contributing--conventions)
 - [License](#license)
@@ -41,7 +40,7 @@ Requirements traceability throughout this document uses the `FR-*` / `BR-*` IDs 
 
 ## Project Status
 
-BillFlow is **substantially implemented**, not a scaffold. The backend is feature-complete across all five modules; the Angular frontend is built out end-to-end (auth, customers, invoices, payments, dashboard). The remaining gaps are deployment wiring and a couple of dangling references, called out honestly below.
+BillFlow is **substantially implemented**, not a scaffold. The backend is feature-complete across all five modules; the Angular frontend is built out end-to-end (auth, customers, invoices, payments, dashboard). The remaining gaps are a couple of dangling references, called out honestly below.
 
 | Layer | Status | Notes |
 |---|---|---|
@@ -51,13 +50,11 @@ BillFlow is **substantially implemented**, not a scaffold. The backend is featur
 | **Backend — tests** | ✅ Implemented | Socket-free unit tests + DB-backed integration tests (Jest + `mongodb-memory-server`). See [Testing](#testing). |
 | **Frontend — SPA** | ✅ Implemented | Angular 21 standalone components + Signals; NgRx holds the auth slice only. All feature routes are lazy-loaded behind `authGuard`. |
 | **Frontend — tests** | 🟡 Present | `*.spec.ts` sibling per component/service, run via Karma/Jasmine (`ng test`). |
-| **Deployment — Netlify (frontend)** | 🟡 Configured | `frontend/netlify.toml` builds with `npx ng build` and publishes `dist/billflow/browser`. |
-| **Deployment — Render (backend)** | 🟡 Manual | No Render blueprint checked in; the prod API URL in `environment.prod.ts` is still a **placeholder** (`billflow-api.onrender.com`). |
 
 **Honest caveats (worth knowing before you start):**
 
 - `npm run seed` is defined in `backend/package.json` but **`backend/src/seed.js` does not exist** — the script is a dangling reference today.
-- `environment.prod.ts` `apiUrl` is a TODO placeholder; point it at your real Render URL before a production build.
+- `environment.prod.ts` `apiUrl` is a TODO placeholder; point it at your real production API URL before a production build.
 - `Invoice.pdfUrl` is a declared-but-unused field — PDFs are always rendered on demand, never stored.
 - The auth `returnUrl` deep-link redirect is only half-wired on the frontend (the guard never sets the query param), so post-login always lands on `/dashboard`.
 
@@ -146,7 +143,6 @@ Key points: there is deliberately **no message queue or separate worker process*
 | Hardening | `express-rate-limit`, `cors`, `cookie-parser`, `morgan` | Rate-limit on `/register` + `/login` |
 | Backend tests | Jest 29 + Supertest 7 + `mongodb-memory-server` 10 | Unit + DB-backed integration |
 | Frontend tests | Karma + Jasmine | `ng test` |
-| Deployment | Netlify (frontend) · Render (backend) | See [Deployment](#deployment) |
 
 ---
 
@@ -188,7 +184,6 @@ BillFlow-V1/
 │   │   ├── shared/             # loading-spinner, confirm-dialog
 │   │   └── store/              # NgRx auth slice (actions/reducer/selectors)
 │   ├── src/environments/       # environment.ts, environment.prod.ts
-│   ├── netlify.toml            # build + SPA redirect
 │   ├── angular.json
 │   └── package.json
 ├── docs/                        # BRD, Technical Spec, Interview Notes
@@ -268,7 +263,7 @@ Backend variables live in `backend/environment/.env` (template: `backend/environ
 |---|---|---|---|
 | `NODE_ENV` | no | `development` | Affects cookie `secure`/`sameSite`, rate-limit skip in tests |
 | `PORT` | no | `5000` | API listen port |
-| `CLIENT_URL` | no | `http://localhost:4200` | CORS origin (Netlify URL in prod) |
+| `CLIENT_URL` | no | `http://localhost:4200` | CORS origin |
 | `MONGODB_URI` | **yes** | — | Mongo connection string; **must be a replica set** |
 | `JWT_ACCESS_SECRET` | **yes** | — | Signs access tokens (API 500s if unset) |
 | `JWT_REFRESH_SECRET` | **yes** | — | Signs refresh tokens (API 500s if unset) |
@@ -415,32 +410,6 @@ Test env (`tests/setup.env.js`) sets throwaway JWT secrets and cost-4 bcrypt; th
 cd frontend
 npm test    # ng test — every component/service has a .spec.ts sibling
 ```
-
----
-
-## Deployment
-
-### Frontend → Netlify
-
-`frontend/netlify.toml` is committed:
-
-- **Build command:** `npx ng build`
-- **Publish directory:** `dist/billflow/browser`
-- **SPA fallback:** `/* → /index.html` (status `200`) for client-side routing
-
-Before building for production, set `frontend/src/environments/environment.prod.ts` `apiUrl` to your real Render API URL (it ships as a placeholder). The Angular build swaps `environment.ts` → `environment.prod.ts` automatically.
-
-### Backend → Render
-
-Deploy as a **single web service** from the repo (rooted at `backend/`):
-
-1. **Web service** — start command `npm start` (`node src/server.js`). The node-cron scheduled jobs run inside this same process, so no separate worker or Redis instance is needed.
-
-It needs the environment variables (see [Environment Variables](#environment-variables)) and a **replica-set** `MONGODB_URI` (MongoDB Atlas). Set `CLIENT_URL` to your Netlify origin so CORS and the cross-origin refresh cookie (`sameSite=none; secure` in production) work. Configure secrets in Render's dashboard — **never** in the repo.
-
-> **Scaling note:** because the cron jobs run in-process, this assumes a **single API instance**. If you scale to multiple instances, the scheduled jobs would run on each one — that's the point at which you'd move scheduled/slow work to a **BullMQ + Redis** queue with a dedicated worker (see [Key Implementation Patterns](#key-implementation-patterns)).
-
-> There is no Render blueprint (`render.yaml`) checked in yet; the service is configured manually.
 
 ---
 

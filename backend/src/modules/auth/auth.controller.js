@@ -16,7 +16,7 @@ const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
  * Build the options for the refresh-token cookie.
  * - httpOnly: JS in the browser can't read it (mitigates XSS token theft)
  * - secure:   only sent over HTTPS in production (allow HTTP on localhost for dev)
- * - sameSite: 'strict' locally; 'none' in prod so the Netlify frontend on a different
+ * - sameSite: 'strict' locally; 'none' in prod so the frontend on a different
  *             origin can send it (requires secure:true, which prod has)
  * - path:     scope the cookie to the auth routes that actually read it
  */

@@ -11,7 +11,6 @@ Full spec reference: `docs/BillFlow_Dev_Technical_Spec.md`
 - **Scheduling:** node-cron (in-process daily jobs) — no message queue at this scale
 - **PDF:** PDFKit
 - **Email:** SendGrid (`@sendgrid/mail`)
-- **Deployment:** Frontend → Netlify, Backend → Render
 
 ## Coding Rules
 
@@ -70,7 +69,7 @@ This project uses dedicated subagents for different types of work. When a task m
 **Use when:** starting work on payment-related endpoints, auth flows, or anything handling sensitive customer data. Create this agent file when the Payment module work begins.
 
 ### devops-agent.md (add when needed — not yet created)
-**Use when:** setting up deployment, CI/CD, or environment variable management for Render/Netlify. Create this agent file when deployment work starts.
+**Use when:** setting up deployment, CI/CD, or environment variable management. Create this agent file when deployment work starts.
 
 **General rule:** Don't invoke an agent outside its stated scope, and don't create the "add when needed" agents until the matching task actually comes up — this avoids unused, stale agent definitions.
 

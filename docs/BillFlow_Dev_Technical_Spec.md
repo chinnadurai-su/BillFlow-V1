@@ -54,7 +54,6 @@ financial-grade correctness (idempotency, transactions, audit logging) built in.
 | Password hashing | bcrypt | `select: false` password hash |
 | Testing (BE) | Jest + supertest + `mongodb-memory-server` | Socket-free unit + DB-backed integration |
 | Testing (FE) | Angular TestBed (Karma + Jasmine) | Component/service specs |
-| Hosting | Netlify (frontend) / Render (backend) | CI/CD via Git |
 
 ---
 
@@ -129,7 +128,6 @@ BillFlow/
 │   ├── setup.env.js, jest.config.js, helpers/{db,authApp}.js
 │
 └── frontend/
-    ├── netlify.toml
     └── src/
         ├── environments/                 # environment.ts / environment.prod.ts (apiUrl)
         └── app/
@@ -402,7 +400,7 @@ statuses, returns `{ success, message, errorCode }`, and never leaks internals o
 # Server
 NODE_ENV=development
 PORT=5000
-CLIENT_URL=http://localhost:4200          # CORS origin (Angular dev / Netlify in prod)
+CLIENT_URL=http://localhost:4200          # CORS origin (Angular dev)
 
 # Database (replica set required for transactions)
 MONGODB_URI=
@@ -442,25 +440,14 @@ formatting). The real `.env` lives in `backend/environment/` and is **git-ignore
 
 ---
 
-## 11. Deployment
-
-- **Frontend → Netlify** (`frontend/netlify.toml`); `environment.prod.ts` points `apiUrl` at the
-  Render API.
-- **Backend → Render** — a single web service (`npm start`); set env vars in the Render dashboard.
-  MongoDB via Atlas (a replica set, required for transactions). No Redis/worker needed — the daily
-  node-cron jobs run in the same process. (Note: on multi-instance hosting the cron would run on
-  every instance; single-instance is assumed at this scale.)
-
----
-
-## 12. AI-Assisted Development (Claude Code)
+## 11. AI-Assisted Development (Claude Code)
 
 | Piece | Purpose | Location |
 |---|---|---|
 | **CLAUDE.md** | Project-wide rules (stack, idempotency/transaction/audit mandates, conventions) | `.claude/CLAUDE.md` |
 | **Subagents** | `frontend-agent`, `backend-agent`, `testing-agent`, `reviewer-agent` | `.claude/agents/*.md` |
 | **Skills** | `idempotent-endpoint` (POST-protection pattern) | `.claude/skills/*/SKILL.md` |
-| **MCP** | GitHub / Render / Netlify integrations | `.mcp.json` |
+| **MCP** | GitHub integration | `.mcp.json` |
 
 Workflow: backend-agent builds an endpoint → follows the `idempotent-endpoint` skill → testing-agent
 adds Jest coverage (incl. the duplicate-key test) → reviewer-agent applies the pre-commit checklist
@@ -468,7 +455,7 @@ adds Jest coverage (incl. the duplicate-key test) → reviewer-agent applies the
 
 ---
 
-## 13. Known Gaps / To Decide
+## 12. Known Gaps / To Decide
 
 - **PDF storage** — PDFs are rendered on demand and streamed; `Invoice.pdfUrl` is declared but never
   populated (no bucket/disk persistence yet). Decide: store in a bucket vs keep on-demand.

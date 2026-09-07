@@ -1,7 +1,7 @@
 // pdfGenerator.js — renders an invoice into a PDF using PDFKit (Spec Section 2 / 7.4).
 //
 // OUTPUT FORMAT DECISION — returns a Buffer (in-memory), not a file path.
-//   Why: the backend deploys to Render, whose filesystem is ephemeral, and PDF storage
+//   Why: the runtime filesystem is ephemeral, and PDF storage
 //   is still an open item (Spec Section 14). Returning an in-memory Buffer avoids
 //   depending on a writable/persistent disk and lets the CALLER decide what to do with
 //   it — attach it to an email (worker), stream it as the GET /api/invoices/:id/pdf
