@@ -22,6 +22,7 @@ Requirements traceability throughout this document uses the `FR-*` / `BR-*` IDs 
 
 - [Project Status](#project-status)
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -74,6 +75,66 @@ Mapped to the BRD (`docs/BillFlow_BRD.md`).
 - **Dashboard** — total revenue, total outstanding, overdue totals/count, and a revenue-trend time series for charts (FR-5.1–FR-5.2).
 - **Auth & RBAC** — JWT access tokens (15 min) + rotating refresh tokens (7 days, httpOnly cookie) with a SHA-256 denylist for logout/rotation; `admin` / `staff` roles (FR-7.1–FR-7.3, BR-5).
 - **Audit trail** — every sensitive create/update/delete on Invoice/Customer/Payment writes an `AuditLog` entry inside the same transaction, with secrets scrubbed (FR-6.1–FR-6.2).
+
+---
+
+## Screenshots
+
+A walkthrough of the application in workflow order — from sign-up through recording a payment.
+
+### 1. Sign in
+
+Email + password login; the entry point for returning users.
+
+![BillFlow sign-in page](images/Login-page.png)
+
+### 2. Create account
+
+Self-service registration (full name, email, password) that provisions a new BillFlow account.
+
+![BillFlow registration page](images/Registration-page.png)
+
+### 3. Dashboard
+
+Billing at a glance — total revenue, outstanding, overdue count, and a 12-month revenue trend.
+
+![BillFlow dashboard](images/dashboard-page.png)
+
+### 4. Customers
+
+Searchable, paginated customer list with running balances and edit/delete actions.
+
+![BillFlow customers list](images/custome-list-page.png)
+
+### 5. New customer
+
+Capture contact details and billing address to start billing a customer.
+
+![BillFlow new customer form](images/New-customer-page.png)
+
+### 6. Invoices
+
+Filterable invoice list (by status and date range) with per-invoice status, due date, and amount.
+
+![BillFlow invoices list](images/Invoice-list-page.png)
+
+### 7. New invoice
+
+Add line items with server-computed subtotal, tax, and total; supports recurring invoices.
+
+![BillFlow new invoice form](images/New-Invoice-page.png)
+
+### 8. Payments
+
+Track payments recorded against invoices, including method, status, date, and amount.
+
+![BillFlow payments list](images/Payments-list-page.png)
+
+### 9. Record payment
+
+Log a full or partial payment against an invoice with method and optional transaction reference.
+
+![BillFlow record payment form](images/Payments-page.png)
 
 ---
 
